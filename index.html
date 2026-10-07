@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Akinator Layout</title>
+<script>
+/* TRAVA DOS SITES: liberar/bloquear e senha dos jogadores pela Central */
+(function () {
+  var nome = "" || location.pathname.split("/").filter(Boolean)[0] || "";
+  if (location.protocol === "file:" || !nome) return;
+  var espera = document.createElement("style");
+  espera.textContent = "body{visibility:hidden}";
+  document.head.appendChild(espera);
+  var pronto = function () { if (espera.parentNode) espera.parentNode.removeChild(espera); };
+  var s = document.createElement("script");
+  s.src = "/trava.js";
+  s.setAttribute("data-site", nome);
+  s.onload = pronto; s.onerror = pronto;
+  document.head.appendChild(s);
+  setTimeout(pronto, 9000);
+})();
+</script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden}
+body{background:var(--fundo-cor,#cfe3ef);font-family:var(--fonte,"Arima"),system-ui,sans-serif;-webkit-user-select:none;user-select:none}
+button{font-family:inherit}
+#fundos{position:fixed;inset:0;z-index:0;overflow:hidden}
+#fundo,#fundo-b{position:absolute;inset:0}
+#fundo-escurecer{position:fixed;inset:0;z-index:0;pointer-events:none}
+#palco{position:absolute;left:50%;top:50%;width:1920px;height:1080px;margin:-540px 0 0 -960px;transform-origin:50% 50%;z-index:1}
+.el{position:absolute;left:0;top:0;transform:translate(-50%,-50%);transition:opacity var(--t-sumir,700ms) ease}
+.sumindo{opacity:0!important;pointer-events:none}
+#personagem.sumindo #pers-sombra{animation:persSai var(--t-sumir,700ms) ease forwards}
+@keyframes persSai{to{opacity:0;scale:.85;filter:blur(6px)}}
+#personagem{z-index:10}
+#pers-sombra{width:100%;height:100%}
+#pers-sombra.com-sombra{filter:drop-shadow(0 8px 12px rgba(0,0,0,.15))}
+#aki-img{width:100%;height:100%;object-fit:contain;display:block}
+#aki-img.transicao{animation:trocaSuave var(--t-reacao,600ms) cubic-bezier(.4,0,.2,1) forwards}
+@keyframes trocaSuave{0%{opacity:.65;filter:blur(2px);scale:.947}50%{opacity:.85;filter:blur(1px);scale:1.02}100%{opacity:1;filter:blur(0);scale:1}}
+#painel{z-index:20;display:flex;flex-direction:column;gap:25px}
+.question-box{display:flex;align-items:stretch;box-shadow:0 4px 10px rgba(0,0,0,.15);min-height:58px}
+.question-number{background:var(--numero-fundo);color:var(--numero-texto);padding:18px 15px;font-weight:bold;font-size:var(--tam-numero);display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;min-width:45px}
+.question-number::before{content:'';position:absolute;left:-8px;top:56%;transform:translateY(-50%) rotate(-134deg);border-width:40px 39px 24px 0;border-style:solid;border-color:transparent var(--numero-fundo) transparent transparent;z-index:-1}
+.question-number::after{content:'';position:absolute;top:8px;left:50%;transform:translateX(-50%) rotate(45deg);width:6px;height:6px;background:var(--losango)}
+.diamante-baixo{position:absolute;bottom:8px;left:50%;transform:translateX(-50%) rotate(45deg);width:6px;height:6px;background:var(--losango)}
+.question-text{background:var(--pergunta-fundo);color:var(--pergunta-texto);padding:18px 25px;font-size:var(--tam-pergunta);font-weight:bold;flex:1;display:flex;align-items:center}
+.loading-dots{display:flex;align-items:center;justify-content:center;gap:6px;width:100%}
+.loading-dots span{animation:blink 1.4s infinite both;font-size:2.2em;line-height:1;font-weight:bold;color:var(--pergunta-texto);display:inline-block}
+.loading-dots span:nth-child(2){animation-delay:.2s}
+.loading-dots span:nth-child(3){animation-delay:.4s}
+@keyframes blink{0%{opacity:.15;transform:scale(.8)}20%{opacity:1;transform:scale(1.2)}100%{opacity:.15;transform:scale(.8)}}
+.answers-box{position:relative;background:var(--respostas-fundo);border:2px solid var(--respostas-borda);border-radius:2px;padding:10px 0;display:flex;flex-direction:column;width:100%;box-shadow:0 4px 15px rgba(0,0,0,.05)}
+.answers-box.disabled{pointer-events:none}
+.answers-box.disabled .answer-option{opacity:.25}
+.spinner-loader{display:none;position:absolute;top:50%;left:50%;width:42px;height:42px;margin:-21px 0 0 -21px;border:4px solid var(--spinner-claro);border-top-color:var(--spinner);border-radius:50%;animation:spin .9s linear infinite;z-index:5}
+@keyframes spin{to{transform:rotate(360deg)}}
+.answers-box.disabled .spinner-loader{display:block}
+.answer-option{position:relative;background:transparent;border:none;color:var(--resposta-texto);font-size:var(--tam-resposta);font-weight:bold;padding:14px 20px;cursor:pointer;text-align:center;width:100%;transition:background .2s ease,opacity .3s ease}
+.answer-option::after{content:'»';position:absolute;right:25px;top:50%;transform:translateY(-50%);font-size:1.15em;opacity:0;transition:opacity .2s ease}
+.answer-option:hover{background:linear-gradient(180deg,var(--hover1) 0%,var(--hover2) 100%);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.answer-option:hover::after{opacity:1}
+#resultado{z-index:20;display:flex;flex-direction:column;align-items:center;gap:20px}
+#resultado.aparecendo{animation:resultadoEntra var(--t-resultado,500ms) ease-out both}
+@keyframes resultadoEntra{0%{opacity:0;translate:0 14px}100%{opacity:1;translate:0 0}}
+.final-header-box{display:flex;flex-direction:column;background:var(--res-fundo);border:2px solid var(--res-borda);box-shadow:0 4px 15px rgba(0,0,0,.1);overflow:hidden;border-radius:2px}
+.final-title-bar{background:var(--titulo-fundo);color:var(--titulo-texto);text-align:center;padding:10px;font-size:var(--tam-titulo);font-weight:bold;letter-spacing:1px;text-transform:uppercase}
+.final-info-body{flex:1;justify-content:center;padding:20px 15px;display:flex;flex-direction:column;align-items:center;gap:5px}
+.final-char-name{font-size:var(--tam-nome);font-weight:800;color:var(--nome-cor);line-height:1.2;text-align:center}
+.final-char-desc{font-size:var(--tam-desc);color:var(--desc-cor);margin-bottom:15px;text-align:center}
+.final-buttons{display:flex;align-items:center;justify-content:center;gap:25px;width:100%}
+.btn-final{background:var(--botao-fundo);color:var(--botao-texto);border:none;padding:8px 45px;border-radius:20px;font-size:var(--tam-botao);font-weight:bold;cursor:pointer;transition:background-color .2s,transform .1s}
+.btn-final:hover{background:var(--botao-hover);transform:scale(1.03)}
+.diamond-divider{width:6px;height:6px;background:var(--losango);transform:rotate(45deg)}
+.final-image-box{background:var(--res-fundo);border:2px solid var(--res-borda);box-shadow:0 4px 15px rgba(0,0,0,.08);padding:25px;display:flex;flex-direction:column;align-items:center;border-radius:2px;overflow:hidden;min-height:0}
+.foto-moldura{position:relative;overflow:hidden;min-height:0;max-width:100%;border-radius:2px;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+#final-img{position:absolute;left:50%;top:50%;width:100%;height:100%;object-fit:cover;transition:opacity .3s,filter .3s}
+.foto-carregando{display:none;position:absolute;left:50%;top:50%;width:42px;height:42px;margin:-21px 0 0 -21px;border:4px solid var(--spinner-claro);border-top-color:var(--spinner);border-radius:50%;animation:spin .9s linear infinite;z-index:2}
+#resultado.carregando .foto-carregando{display:block}
+#resultado.carregando #final-img{opacity:.25;filter:blur(2px)}
+#resultado.carregando .final-buttons{pointer-events:none;opacity:.35}
+.final-char-name .loading-dots{height:1.2em}
+.final-char-name .loading-dots span{font-size:1em;color:var(--nome-cor)}
+.final-credits{margin-top:15px;font-size:var(--tam-creditos);font-weight:bold;color:var(--creditos-cor);text-align:center}
+.final-copyright{margin-top:4px;font-size:11px;color:var(--copyright-cor)}
+#revelacao{z-index:30}
+#revelacao.com-sombra{filter:drop-shadow(0 12px 20px rgba(0,0,0,.2))}
+#reveal-img{width:100%;height:100%;object-fit:contain;display:block}
+#reveal-img.revelando{animation:revelar var(--t-revelacao,1400ms) cubic-bezier(.2,.8,.2,1) both}
+@keyframes revelar{0%{opacity:0;scale:.55;filter:blur(8px)}100%{opacity:1;scale:1;filter:blur(0)}}
+.extra img{width:100%;height:auto;display:block}
+.modo-editor [data-el]{cursor:move}
+.modo-editor [data-el]:hover{outline:3px dashed rgba(255,61,127,.45);outline-offset:6px}
+.modo-editor .selecionado,.modo-editor .selecionado:hover{outline:4px dashed #ff3d7f;outline-offset:6px}
+.modo-editor .proprio{outline:3px dotted #ffb020;outline-offset:6px}
+.modo-editor .proprio.selecionado,.modo-editor .proprio.selecionado:hover{outline:4px dashed #ffb020}
+.modo-editor button{pointer-events:none}
+.modo-editor img{pointer-events:none;-webkit-user-drag:none}
+</style>
+</head>
+<body>
+<div id="fundos"><div id="fundo"></div><div id="fundo-b"></div></div>
+<div id="fundo-escurecer"></div>
+<div id="palco">
+  <div class="el" id="personagem" data-el="personagem"><div id="pers-sombra"><img id="aki-img" alt=""></div></div>
+  <div class="el" id="painel" data-el="painel">
+    <div class="question-box">
+      <div class="question-number"><span id="q-num">1</span><div class="diamante-baixo"></div></div>
+      <div class="question-text" id="q-text"></div>
+    </div>
+    <div class="answers-box" id="respostas"><div class="spinner-loader"></div></div>
+  </div>
+  <div class="el" id="resultado" data-el="resultado" style="display:none">
+    <div class="final-header-box">
+      <div class="final-title-bar" id="txt-acho"></div>
+      <div class="final-info-body">
+        <div class="final-char-name" id="final-name"></div>
+        <div class="final-char-desc" id="final-desc"></div>
+        <div class="final-buttons">
+          <button class="btn-final" id="btn-sim"></button>
+          <div class="diamond-divider"></div>
+          <button class="btn-final" id="btn-nao"></button>
+        </div>
+      </div>
+    </div>
+    <div class="final-image-box">
+      <div class="foto-moldura" id="foto-moldura" data-el="foto"><img id="final-img" alt=""><div class="foto-carregando"></div></div>
+      <div class="final-credits" id="final-credits"></div>
+      <div class="final-copyright" id="final-copyright"></div>
+    </div>
+  </div>
+  <div class="el" id="revelacao" data-el="revelacao" style="display:none"><img id="reveal-img" alt=""></div>
+</div>
+<script>
+window.GAME_MODE = "play";
+window.GAME_CONFIG = {"versao":2,"fonte":{"familia":"Arima","google":true},"fundo":{"imagem":"a_fundo","cor":"#cfe3ef","modo":"cobrir","posX":50,"posY":0,"desfoque":0,"escurecer":0},"personagem":{"x":594,"y":535,"largura":320,"altura":420,"escala":2.15,"rotacao":0,"espelharX":true,"espelharY":false,"sombra":true,"opacidade":1,"z":10},"painel":{"x":990,"y":540,"largura":420,"escala":1,"rotacao":0},"resultado":{"x":990,"y":540,"largura":420,"escala":0.9,"rotacao":0,"fotoLargura":210,"fotoAltura":210,"mostrarCreditos":true,"mostrarCopyright":true,"topoLargura":0,"topoAltura":0,"caixaLargura":0,"caixaAltura":0,"fotoPreencher":false},"cores":{"numeroFundo":"#183e52","numeroTexto":"#ffffff","losango":"#728c9d","perguntaFundo":"#ffffff","perguntaFundoAlfa":0.85,"perguntaTexto":"#1f2d3d","respostasFundo":"#dce6f2","respostasFundoAlfa":0.65,"respostasBorda":"#ffffff","respostasBordaAlfa":0.8,"respostaTexto":"#1a2a3a","hover1":"#ffffff","hover2":"#edf3f9","spinner":"#1f3a4b","resFundo":"#dce6f2","resFundoAlfa":0.75,"resBorda":"#ffffff","resBordaAlfa":0.85,"tituloFundo":"#1f3a4b","tituloTexto":"#ffffff","nome":"#1f3a4b","desc":"#556b7d","botaoFundo":"#1f3a4b","botaoHover":"#122532","botaoTexto":"#ffffff","creditos":"#1f3a4b","copyright":"#556b7d"},"tamanhos":{"numero":18,"pergunta":16,"resposta":15,"titulo":16,"nome":22,"desc":14,"botao":15,"creditos":16},"textos":{"tituloPagina":"Akinator Layout","respostas":["Sim","Não","Não sei","Provavelmente sim","Provavelmente não"],"euAchoQue":"Eu acho que","sim":"Sim","nao":"Não","copyright":"© Copyright / IP Policy"},"tempos":{"pensando":1200,"transicaoReacao":600,"entradaResultado":500,"sumir":700,"revelacao":1400,"carregarCartao":1200,"fundo":600},"reacaoErrou":"a_aki3","trava":{"ativa":true,"site":""},"extras":[],"rodadas":[{"perguntas":[{"texto":"O seu personagem é uma menina?","reacao":"a_xfq6mlw"},{"texto":"O seu personagem existe na vida real?","reacao":"a_aki6"},{"texto":"O seu personagem é um ser vivo?","reacao":"a_aki3"},{"texto":"O seu personagem costuma ser encontrado dentro de casa?","reacao":"a_aki4"},{"texto":"O seu personagem pode ser segurado com apenas uma mão?","reacao":"a_aki4"},{"texto":"O seu personagem costuma ser encontrado na cozinha?","reacao":"a_aki4"},{"texto":"O seu personagem é usado durante as refeições?","reacao":"a_aki3"},{"texto":"O seu personagem possui alguma parte feita de metal?","reacao":"a_aki4"},{"texto":"O seu personagem possui um cabo?","reacao":"a_aki4"},{"texto":"O seu personagem pode ser usado para preparar alimentos?","reacao":"a_aki7"},{"texto":"O seu personagem serve para separar coisas em partes menores?","reacao":"a_aki4"},{"texto":"O seu personagem possui alguma parte afiada?","reacao":"a_aki3"},{"texto":"O seu personagem possui uma lâmina?","reacao":"a_aki4"},{"texto":"O seu personagem é usado principalmente para cortar?","reacao":"a_aki4"}],"tipo":"resultado","reacaoInicio":null,"resultado":{"nome":"Faca","desc":"Objeto","creditos":"Enviado por StefanieDir67","imagem":"a_ggclvyb","reacao":"a_b6xq4px","foto":{"zoom":2.25,"offX":21,"offY":0,"ajuste":"conter","espelharX":false,"rotacao":0},"mostrarTitulo":true,"titulo":"","sim":"","nao":""},"revelacao":{"imagem":null,"x":960,"y":540,"largura":1100,"altura":900,"escala":1,"rotacao":0,"espelharX":false,"espelharY":false,"sombra":true,"esconderPersonagem":true},"fundo":null,"continuar":{"ativo":true,"nome":"Continuar","desc":"-","creditos":"","imagem":null,"reacao":"a_aki7","foto":{"zoom":1,"offX":0,"offY":0,"ajuste":"cobrir","espelharX":false,"rotacao":0},"mostrarTitulo":true,"titulo":"‎ ","sim":"","nao":""}},{"perguntas":[{"texto":"O seu personagem deve ser mantido longe de crianças?","reacao":"a_aki7"},{"texto":"O seu personagem pode ser perigoso para seres humanos?","reacao":"a_r564hpx"},{"texto":"O seu personagem aparece com frequência em histórias de mistério?","reacao":"a_aki1"},{"texto":"O seu personagem pode ser encontrado em um recipiente?","reacao":"a_aki4"},{"texto":"O seu personagem pode assumir a forma de um líquido?","reacao":"a_aki6"},{"texto":"O seu personagem costuma possuir algum tipo de aviso em sua embalagem?","reacao":"a_aki4"},{"texto":"O seu personagem pode causar intoxicação?","reacao":"a_aki1"},{"texto":"O seu personagem pode ser encontrado na natureza?","reacao":"a_aki6"},{"texto":"O seu personagem está associado a um símbolo de caveira?","reacao":"a_r564hpx"},{"texto":"O seu personagem é conhecido principalmente por ser tóxico?","reacao":"a_v43hiou"}],"tipo":"resultado","reacaoInicio":null,"resultado":{"nome":"Veneno","desc":"-","creditos":"Enviado por kekw95","imagem":"a_4mlscok","reacao":"a_aki8","foto":{"zoom":1,"offX":0,"offY":0,"ajuste":"cobrir","espelharX":false,"rotacao":0},"mostrarTitulo":true,"titulo":"","sim":"","nao":""},"revelacao":{"imagem":null,"x":960,"y":540,"largura":1100,"altura":900,"escala":1,"rotacao":0,"espelharX":false,"espelharY":false,"sombra":true,"esconderPersonagem":true},"fundo":null,"continuar":{"ativo":true,"nome":"Continuar","desc":"","creditos":"","imagem":null,"reacao":"a_v43hiou","foto":{"zoom":1,"offX":0,"offY":0,"ajuste":"cobrir","espelharX":false,"rotacao":0},"mostrarTitulo":true,"titulo":"‎ ","sim":"","nao":""}},{"perguntas":[{"texto":"O seu personagem consegue falar?","reacao":"a_r564hpx"},{"texto":"O seu personagem possui poderes sobrenaturais?","reacao":"a_aki6"},{"texto":"O seu personagem usa alguma coisa na cabeça?","reacao":"a_aki1"},{"texto":"O seu personagem costuma fazer muitas perguntas?","reacao":"a_aki3"},{"texto":"O seu personagem tenta descobrir em quem você está pensando?","reacao":"a_aki4"},{"texto":"O seu personagem usa um turbante?","reacao":"a_aki1"},{"texto":"O seu personagem consegue adivinhar personagens?","reacao":"a_aki4"},{"texto":"O seu personagem está fazendo estas perguntas agora?","reacao":"a_7pfs2k9"}],"tipo":"resultado","reacaoInicio":null,"resultado":{"nome":"Akinator","desc":"Gênio","creditos":"","imagem":"a_w0nmipm","reacao":"a_aki8","foto":{"zoom":1.08,"offX":-50,"offY":0,"ajuste":"cobrir","espelharX":false,"rotacao":0},"mostrarTitulo":true,"titulo":"","sim":"","nao":""},"revelacao":{"imagem":null,"x":960,"y":540,"largura":1100,"altura":900,"escala":1,"rotacao":0,"espelharX":false,"espelharY":false,"sombra":true,"esconderPersonagem":true},"fundo":null,"continuar":{"ativo":true,"nome":"Continuar...?","desc":"...","creditos":"","imagem":null,"reacao":"a_aki6","foto":{"zoom":1,"offX":0,"offY":0,"ajuste":"cobrir","espelharX":false,"rotacao":0},"mostrarTitulo":true,"titulo":"‎ ...","sim":"Sim?","nao":"Sim!"}},{"perguntas":[{"texto":"O seu personagem pode ser maior que uma pessoa?","reacao":"a_aki1"},{"texto":"O seu personagem normalmente fica do lado de fora?","reacao":"a_aki8"},{"texto":"O seu personagem pode ser encontrado em locais públicos?","reacao":"a_aki1"},{"texto":"O seu personagem foi construído por seres humanos?","reacao":"a_aki3"},{"texto":"O seu personagem normalmente permanece no mesmo lugar?","reacao":"a_aki4"},{"texto":"O seu personagem pode durar dezenas de anos?","reacao":"a_v43hiou"},{"texto":"O seu personagem pode possuir palavras escritas nele?","reacao":"a_aki6"},{"texto":"O seu personagem pode possuir números?","reacao":"a_aki4"},{"texto":"O seu personagem pode possuir o nome de alguém?","reacao":"a_r564hpx"},{"texto":"O seu personagem pode ser feito de pedra?","reacao":"a_aki6"},{"texto":"O seu personagem pode possuir uma fotografia de uma pessoa?","reacao":"a_aki1"},{"texto":"O seu personagem está relacionado a lembranças?","reacao":"a_xfq6mlw"},{"texto":"O seu personagem normalmente possui duas datas relacionadas à mesma pessoa?","reacao":"a_aki6"},{"texto":"O seu personagem costuma ser encontrado em cemitérios?","reacao":"a_r564hpx"},{"texto":"O seu personagem identifica o local onde uma pessoa foi sepultada?","reacao":"a_v43hiou"}],"tipo":"resultado","reacaoInicio":null,"resultado":{"nome":"Túmulo","desc":"-","creditos":"Enviado por ghostfacefan123","imagem":"a_wodg83a","reacao":"a_aki8","foto":{"zoom":1,"offX":0,"offY":0,"ajuste":"cobrir","espelharX":false,"rotacao":0},"mostrarTitulo":true,"titulo":"","sim":"","nao":""},"revelacao":{"imagem":null,"x":960,"y":540,"largura":1100,"altura":900,"escala":1,"rotacao":0,"espelharX":false,"espelharY":false,"sombra":true,"esconderPersonagem":true},"fundo":null,"continuar":{"ativo":true,"nome":"??????","desc":"Você ainda quer continuar???","creditos":"Enviado por Continuar???","imagem":null,"reacao":"a_r564hpx","foto":{"zoom":1,"offX":0,"offY":0,"ajuste":"cobrir","espelharX":false,"rotacao":0},"mostrarTitulo":true,"titulo":"Continuar??????","sim":"Não","nao":"Sim??"}},{"perguntas":[{"texto":"O s-seu p-personagem consegue se m-movimentar s-sozinho???","reacao":"a_aki7","painel":null,"respostas":["Sim?","N-Não...","Não s-sei?","Provavelmente não??","Provavelmente s-sim...?"],"numero":"49?"},{"texto":"O s-seu personagem pode desaparecer de repente?","reacao":"a_aki4"},{"texto":"O seu p-personagem consegue atravessar paredes?","reacao":"a_aki1"},{"texto":"O seu personagem possui forma h-humana?","reacao":"a_aki6","respostas":["Não","Não","Não","Não","Não"]},{"texto":"O seu personagem pode ser invisível?","reacao":"a_r564hpx","numero":"??"},{"texto":"O s-seu personagem costuma assombrar l-lugares?","reacao":"a_aki6","respostas":["Sim","Sim","Sim","Sim","Sim"],"numero":"544"},{"texto":"O s-seu personagem c-costuma aparecer em histórias de c-casas mal-assombradas?","reacao":"a_r564hpx","respostas":["ㅤ","ㅤ","...SIM...","ㅤ","ㅤ"],"fundo":null},{"texto":"...","reacao":"a_aki6","numero":"56..."},{"texto":"o seu personagem... costuma ser representado... como uma figura branca e... assustadora...?","reacao":"a_aki4","numero":"67","respostas":["sim.","sim.","sim.","sim.","sim."]},{"texto":"...","reacao":"a_jnq368o","respostas":["...","...","...","...","..."],"numero":"...","personagem":{"x":568,"y":540,"largura":320,"altura":420,"escala":1.26,"rotacao":0,"espelharX":true,"espelharY":false,"sombra":true,"opacidade":1,"z":10}}],"tipo":"revelacao","reacaoInicio":null,"resultado":{"nome":"Túmulo","desc":"-","creditos":"Enviado por ghostfacefan123","imagem":"a_wodg83a","reacao":"a_aki8","foto":{"zoom":1,"offX":0,"offY":0,"ajuste":"cobrir","espelharX":false,"rotacao":0},"mostrarTitulo":true,"titulo":"","sim":"","nao":""},"revelacao":{"imagem":"a_9k4mv76","x":960,"y":540,"largura":1100,"altura":900,"escala":0.88,"rotacao":0,"espelharX":false,"espelharY":false,"sombra":true,"esconderPersonagem":true},"fundo":null,"continuar":{"ativo":false,"nome":"Continuar","desc":"","creditos":"","imagem":null,"reacao":null,"foto":{"zoom":1,"offX":0,"offY":0,"ajuste":"cobrir","espelharX":false,"rotacao":0},"mostrarTitulo":true,"titulo":"","sim":"","nao":""}}]};
+window.GAME_ASSETS = {"a_fundo":"IMG/1920wlight.png","a_aki3":"IMG/aki3_pensando.svg","a_xfq6mlw":"IMG/aki2_maos_cruzadas.svg","a_aki6":"IMG/aki6_pensando_calma.svg","a_aki4":"IMG/aki4_roendo_unha.svg","a_aki7":"IMG/aki7_no_telefone.svg","a_ggclvyb":"IMG/Facas-de-cozinha-artesanais.webp","a_b6xq4px":"IMG/aki10_mao_pro_lado_hehe.svg","a_r564hpx":"IMG/aki11_incredulo.svg","a_aki1":"IMG/aki1_maos.svg","a_v43hiou":"IMG/aki5_pensando_raiva.svg","a_4mlscok":"IMG/pngtree-poison-bottle-skull-label-png-image_20117309.webp","a_aki8":"IMG/aki8_deixa_com_o_pae.svg","a_7pfs2k9":"IMG/aki9_maos_no_queixo.svg","a_w0nmipm":"IMG/Genio.png","a_wodg83a":"IMG/pngtree-halloween-grave-png-image_12154507.png","a_jnq368o":"IMG/Genio_Entediado_de_Turbante_Branco.png","a_9k4mv76":"IMG/Genio_Nocauteado_com_Cauda_Azul.png"};
+window.GAME_NOMES = {"a_fundo":"1920wlight.png","a_aki3":"aki3_pensando.svg","a_xfq6mlw":"aki2_maos_cruzadas.svg","a_aki6":"aki6_pensando_calma.svg","a_aki4":"aki4_roendo_unha.svg","a_aki7":"aki7_no_telefone.svg","a_ggclvyb":"Facas-de-cozinha-artesanais.webp","a_b6xq4px":"aki10_mao_pro_lado_hehe.svg","a_r564hpx":"aki11_incredulo.svg","a_aki1":"aki1_maos.svg","a_v43hiou":"aki5_pensando_raiva.svg","a_4mlscok":"pngtree-poison-bottle-skull-label-png-image_20117309.webp","a_aki8":"aki8_deixa_com_o_pae.svg","a_7pfs2k9":"aki9_maos_no_queixo.svg","a_w0nmipm":"Génio.png","a_wodg83a":"pngtree-halloween-grave-png-image_12154507.png","a_jnq368o":"Gênio Entediado de Turbante Branco.png","a_9k4mv76":"Gênio Nocauteado com Cauda Azul.png"};
+window.GAME_START = 0;
+</script>
+<script>
+(function () {
+  'use strict';
+  const MODO = window.GAME_MODE || 'play';
+  let CFG = window.GAME_CONFIG;
+  let ASSETS = window.GAME_ASSETS || {};
+  let NOMES = window.GAME_NOMES || {};
+
+  const $ = (id) => document.getElementById(id);
+  const palco = $('palco'), fundoA = $('fundo'), fundoB = $('fundo-b'), escurecer = $('fundo-escurecer');
+  const elPers = $('personagem'), persSombra = $('pers-sombra'), akiImg = $('aki-img');
+  const elPainel = $('painel'), qNum = $('q-num'), qText = $('q-text'), respostas = $('respostas');
+  const elRes = $('resultado'), fotoMoldura = $('foto-moldura'), fotoImg = $('final-img');
+  const topoBox = elRes.querySelector('.final-header-box'), fotoBox = elRes.querySelector('.final-image-box');
+  const elRev = $('revelacao'), revImg = $('reveal-img');
+  const PONTOS = '<div class="loading-dots"><span>.</span><span>.</span><span>.</span></div>';
+  const MODOS_FUNDO = { cobrir: ['cover', 'no-repeat'], conter: ['contain', 'no-repeat'], esticar: ['100% 100%', 'no-repeat'], repetir: ['auto', 'repeat'] };
+  const AJUSTES = { cobrir: 'cover', conter: 'contain', esticar: 'fill' };
+  const extrasEls = new Map();
+  const imgAtual = new WeakMap();
+  let escala = 1, estado = { tipo: 'pergunta', r: 0, p: 0 }, ocupado = false, selecionado = null;
+  let fonteAtual = null, chaveRespostas = '';
+  let fundoFrente = fundoA, fundoUrl = null, tFundo = null;
+
+  function hexRgba(hex, a) {
+    let h = String(hex || '#000000').replace('#', '');
+    if (h.length === 3) h = h.split('').map((c) => c + c).join('');
+    const n = parseInt(h, 16) || 0;
+    return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + (a == null ? 1 : a) + ')';
+  }
+  function src(id) { return id ? (ASSETS[id] || null) : null; }
+
+  function placeholder(texto, w, h) {
+    const t = String(texto).replace(/[<>&"]/g, '');
+    const fs = Math.max(10, Math.min(w / 12, (w * 1.7) / Math.max(t.length, 1)));
+    const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '">' +
+      '<rect x="4" y="4" width="' + (w - 8) + '" height="' + (h - 8) + '" rx="14" fill="rgba(255,255,255,0.55)" stroke="#1f3a4b" stroke-width="4" stroke-dasharray="16 10"/>' +
+      '<text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" font-family="sans-serif" font-size="' + fs + '" font-weight="bold" fill="#1f3a4b">' + t + '</text></svg>';
+    return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+  }
+
+  function setImg(img, id, rotulo, w, h) {
+    const nome = (id && NOMES[id]) || '';
+    const ph = placeholder(nome ? 'Falta: ' + nome : rotulo, w, h);
+    const s = src(id) || ph;
+    if (imgAtual.get(img) === s) return;
+    imgAtual.set(img, s);
+    img.onerror = () => { img.onerror = null; imgAtual.set(img, ph); img.src = ph; };
+    img.src = s;
+  }
+
+  function ajustarPalco() {
+    escala = Math.min(innerWidth / 1920, innerHeight / 1080);
+    palco.style.transform = 'scale(' + escala + ')';
+  }
+
+  function posicionar(e, o, podeEspelhar) {
+    const s = o.escala == null ? 1 : o.escala;
+    const fx = podeEspelhar && o.espelharX ? -1 : 1, fy = podeEspelhar && o.espelharY ? -1 : 1;
+    e.style.left = o.x + 'px';
+    e.style.top = o.y + 'px';
+    e.style.transform = 'translate(-50%,-50%) rotate(' + (o.rotacao || 0) + 'deg) scale(' + (s * fx) + ',' + (s * fy) + ')';
+  }
+
+  function carregarFonte(f) {
+    const fam = (f && f.familia) || 'Arima';
+    document.documentElement.style.setProperty('--fonte', '"' + fam.replace(/"/g, '') + '"');
+    if (fam === fonteAtual) return;
+    fonteAtual = fam;
+    document.querySelectorAll('link[data-fonte]').forEach((l) => l.remove());
+    if (f && f.google === false) return;
+    const nome = encodeURIComponent(fam).replace(/%20/g, '+');
+    ['', ':wght@700'].forEach((suf) => {
+      const l = document.createElement('link');
+      l.rel = 'stylesheet'; l.dataset.fonte = '1';
+      l.href = 'https://fonts.googleapis.com/css2?family=' + nome + suf + '&display=swap';
+      document.head.appendChild(l);
+    });
+  }
+
+  // ---------- respostas (cada pergunta pode ter as suas) ----------
+  function respostasDe(r, p) {
+    const R = CFG.rodadas[r], q = R && R.perguntas[p];
+    return q && q.respostas && q.respostas.length ? q.respostas : (CFG.textos.respostas || []);
+  }
+  function montarRespostas(lista) {
+    const chave = JSON.stringify(lista);
+    if (chave === chaveRespostas) return;
+    chaveRespostas = chave;
+    respostas.querySelectorAll('.answer-option').forEach((b) => b.remove());
+    lista.forEach((t) => {
+      const b = document.createElement('button');
+      b.className = 'answer-option';
+      b.textContent = t;
+      b.addEventListener('click', responder);
+      respostas.appendChild(b);
+    });
+  }
+
+  // ---------- fundo (pode mudar por rodada/pergunta, com troca suave) ----------
+  function estiloFundo() {
+    const f = CFG.fundo, m = MODOS_FUNDO[f.modo] || MODOS_FUNDO.cobrir, d = f.desfoque || 0;
+    [fundoA, fundoB].forEach((e) => {
+      e.style.backgroundSize = m[0];
+      e.style.backgroundRepeat = m[1];
+      e.style.backgroundPosition = f.posX + '% ' + f.posY + '%';
+      e.style.filter = d ? 'blur(' + d + 'px)' : '';
+      e.style.inset = d ? (-d * 2) + 'px' : '0';
+    });
+    escurecer.style.background = 'rgba(0,0,0,' + (f.escurecer || 0) + ')';
+  }
+  function fundoDe(est) {
+    const R = CFG.rodadas[est.r];
+    if (!R) return CFG.fundo.imagem;
+    if (est.tipo === 'pergunta') { const q = R.perguntas[est.p]; if (q && q.fundo) return q.fundo; }
+    return R.fundo || CFG.fundo.imagem;
+  }
+  function definirFundo(id, animar) {
+    const s = src(id);
+    const url = s ? 'url("' + s.replace(/"/g, '%22') + '")' : 'none';
+    if (url === fundoUrl) return;
+    fundoUrl = url;
+    const novo = fundoFrente === fundoA ? fundoB : fundoA, velho = fundoFrente;
+    clearTimeout(tFundo);
+    novo.style.transition = 'none';
+    novo.style.opacity = '0';
+    novo.style.backgroundImage = url;
+    novo.style.zIndex = '2';
+    velho.style.zIndex = '1';
+    void novo.offsetWidth;
+    const t = animar ? (CFG.tempos.fundo || 0) : 0;
+    novo.style.transition = t ? 'opacity ' + t + 'ms ease' : 'none';
+    novo.style.opacity = '1';
+    fundoFrente = novo;
+    tFundo = setTimeout(() => { velho.style.transition = 'none'; velho.style.opacity = '0'; }, t + 30);
+  }
+
+  function aplicarEstilos() {
+    const c = CFG.cores, t = CFG.tempos, z = CFG.tamanhos, st = document.documentElement.style;
+    const v = (k, val) => st.setProperty(k, val);
+    v('--numero-fundo', c.numeroFundo); v('--numero-texto', c.numeroTexto); v('--losango', c.losango);
+    v('--pergunta-fundo', hexRgba(c.perguntaFundo, c.perguntaFundoAlfa)); v('--pergunta-texto', c.perguntaTexto);
+    v('--respostas-fundo', hexRgba(c.respostasFundo, c.respostasFundoAlfa));
+    v('--respostas-borda', hexRgba(c.respostasBorda, c.respostasBordaAlfa));
+    v('--resposta-texto', c.respostaTexto); v('--hover1', c.hover1); v('--hover2', c.hover2);
+    v('--spinner', c.spinner); v('--spinner-claro', hexRgba(c.spinner, 0.2));
+    v('--res-fundo', hexRgba(c.resFundo, c.resFundoAlfa)); v('--res-borda', hexRgba(c.resBorda, c.resBordaAlfa));
+    v('--titulo-fundo', c.tituloFundo); v('--titulo-texto', c.tituloTexto);
+    v('--nome-cor', c.nome); v('--desc-cor', c.desc);
+    v('--botao-fundo', c.botaoFundo); v('--botao-hover', c.botaoHover); v('--botao-texto', c.botaoTexto);
+    v('--creditos-cor', c.creditos); v('--copyright-cor', c.copyright);
+    v('--fundo-cor', CFG.fundo.cor);
+    for (const k in z) v('--tam-' + k, z[k] + 'px');
+    v('--t-reacao', t.transicaoReacao + 'ms'); v('--t-resultado', t.entradaResultado + 'ms');
+    v('--t-sumir', t.sumir + 'ms'); v('--t-revelacao', t.revelacao + 'ms');
+    carregarFonte(CFG.fonte);
+    document.title = CFG.textos.tituloPagina || 'Jogo';
+    estiloFundo();
+    $('final-copyright').textContent = CFG.textos.copyright;
+    $('final-copyright').style.display = CFG.resultado.mostrarCopyright ? '' : 'none';
+  }
+
+  function sincronizarExtras() {
+    const lista = CFG.extras || [];
+    const ids = new Set(lista.map((x) => x.id));
+    extrasEls.forEach((e, id) => { if (!ids.has(id)) { e.remove(); extrasEls.delete(id); } });
+    lista.forEach((x) => {
+      let e = extrasEls.get(x.id);
+      if (!e) {
+        e = document.createElement('div');
+        e.className = 'el extra';
+        e.dataset.el = 'extra:' + x.id;
+        e.appendChild(document.createElement('img'));
+        palco.appendChild(e);
+        extrasEls.set(x.id, e);
+      }
+      e.style.width = x.largura + 'px';
+      e.style.zIndex = x.z;
+      e.firstChild.style.opacity = x.opacidade;
+      posicionar(e, x, true);
+      setImg(e.firstChild, x.imagem, x.nome || 'Imagem', 400, 300);
+    });
+  }
+
+  // cartão "Eu acho que" (palpite) ou etapa "Continuar"
+  function cartaoDe(R, tipo) { return tipo === 'continuar' ? R.continuar : R.resultado; }
+  // "Continuar" sem foto própria mantém a foto (e o ajuste) do palpite
+  function fotoDe(R, tipo) { const c = cartaoDe(R, tipo); return tipo === 'continuar' && !c.imagem && !c.fotoPropria ? R.resultado.foto : c.foto; }
+  // ao mexer na foto do "Continuar" ele passa a ter o ajuste dele (começa igual ao palpite)
+  function fotoParaEditar(R, tipo) {
+    if (tipo !== 'continuar') return R.resultado.foto;
+    const c = R.continuar;
+    if (!c.imagem && !c.fotoPropria) { c.foto = JSON.parse(JSON.stringify(R.resultado.foto)); c.fotoPropria = true; }
+    return c.foto;
+  }
+  // personagem e painel podem ser diferentes numa pergunta específica
+  function perguntaAtual() { const R = CFG.rodadas[estado.r]; return estado.tipo === 'pergunta' && R ? R.perguntas[estado.p] || null : null; }
+  let ignorar = {}; // só no editor: "editando todas as perguntas" mostra o padrão
+  function persAtual() { const q = perguntaAtual(); return q && q.personagem && !ignorar.personagem ? q.personagem : CFG.personagem; }
+  function painelAtual() { const q = perguntaAtual(); return q && q.painel && !ignorar.painel ? q.painel : CFG.painel; }
+
+  function aplicarPosicoes() {
+    const p = persAtual();
+    elPers.style.width = p.largura + 'px';
+    elPers.style.height = p.altura + 'px';
+    elPers.style.zIndex = p.z;
+    posicionar(elPers, p, true);
+    persSombra.classList.toggle('com-sombra', !!p.sombra);
+    persSombra.style.opacity = p.opacidade;
+
+    const pn = painelAtual();
+    elPainel.style.width = pn.largura + 'px';
+    posicionar(elPainel, pn, false);
+    if (MODO === 'editor') {
+      const q = perguntaAtual();
+      elPers.classList.toggle('proprio', !!(q && q.personagem && !ignorar.personagem));
+      elPainel.classList.toggle('proprio', !!(q && q.painel && !ignorar.painel));
+    }
+
+    const rs = CFG.resultado;
+    elRes.style.width = rs.largura + 'px';
+    posicionar(elRes, rs, false);
+    topoBox.style.width = rs.topoLargura > 0 ? rs.topoLargura + 'px' : '100%';
+    topoBox.style.height = rs.topoAltura > 0 ? rs.topoAltura + 'px' : '';
+    fotoBox.style.width = rs.caixaLargura > 0 ? rs.caixaLargura + 'px' : '100%';
+    fotoBox.style.height = rs.caixaAltura > 0 ? rs.caixaAltura + 'px' : '';
+    if (rs.fotoPreencher) {
+      fotoMoldura.style.flex = '1 1 ' + rs.fotoAltura + 'px';
+      fotoMoldura.style.width = '100%';
+    } else {
+      fotoMoldura.style.flex = '0 1 ' + rs.fotoAltura + 'px';
+      fotoMoldura.style.width = rs.fotoLargura + 'px';
+    }
+
+    const R = CFG.rodadas[estado.r];
+    if (R) {
+      const f = fotoDe(R, estado.tipo);
+      fotoImg.style.objectFit = AJUSTES[f.ajuste] || 'cover';
+      fotoImg.style.transform = 'translate(-50%,-50%) translate(' + f.offX + 'px,' + f.offY + 'px) rotate(' + (f.rotacao || 0) + 'deg) scale(' + (f.zoom * (f.espelharX ? -1 : 1)) + ',' + f.zoom + ')';
+      const rv = R.revelacao;
+      elRev.style.width = rv.largura + 'px';
+      elRev.style.height = rv.altura + 'px';
+      posicionar(elRev, rv, true);
+      elRev.classList.toggle('com-sombra', !!rv.sombra);
+    }
+    sincronizarExtras();
+  }
+
+  function vis(e, on) { e.style.display = on ? '' : 'none'; }
+  function visExtras(emRevelacao) {
+    (CFG.extras || []).forEach((x) => {
+      const e = extrasEls.get(x.id);
+      if (e) vis(e, x.visivel !== false && !(emRevelacao && x.esconderNaRevelacao));
+    });
+  }
+  function numeroDe(r, p) {
+    const q = CFG.rodadas[r] && CFG.rodadas[r].perguntas[p];
+    if (q && q.numero != null && String(q.numero).trim() !== '') return q.numero; // número personalizado
+    let n = 0;
+    for (let i = 0; i < r; i++) n += CFG.rodadas[i].perguntas.length;
+    return n + p + 1;
+  }
+
+  function trocarReacao(id, animar) {
+    setImg(akiImg, id, 'Reação', 320, 420);
+    if (animar === false) return;
+    akiImg.classList.remove('transicao');
+    void akiImg.offsetWidth;
+    akiImg.classList.add('transicao');
+  }
+
+  function preencherPergunta(r, p) {
+    qNum.textContent = numeroDe(r, p);
+    qText.textContent = CFG.rodadas[r].perguntas[p].texto;
+    montarRespostas(respostasDe(r, p));
+    respostas.classList.remove('disabled');
+  }
+  // base: no "Continuar", o palpite (texto da barra e créditos vazios = iguais ao palpite)
+  function preencherCartao(c, imgPadrao, base) {
+    base = base || {};
+    const t = CFG.textos, bar = $('txt-acho'), cr = $('final-credits');
+    bar.textContent = c.titulo || base.titulo || t.euAchoQue;
+    vis(bar, c.mostrarTitulo !== false);
+    $('final-name').textContent = c.nome || '';
+    $('final-desc').textContent = c.desc || '';
+    const creditos = c.creditos || base.creditos || '';
+    cr.textContent = creditos;
+    vis(cr, !!(CFG.resultado.mostrarCreditos && creditos));
+    $('btn-sim').textContent = c.sim || t.sim;
+    $('btn-nao').textContent = c.nao || t.nao;
+    setImg(fotoImg, c.imagem || imgPadrao, 'Imagem: ' + (c.nome || ''), 420, 420);
+  }
+  function preencherRevelacao(R) {
+    setImg(revImg, R.revelacao.imagem, 'Imagem final aqui', 900, 900);
+  }
+
+  function limpar() {
+    [elPers, elPainel, elRes, elRev].forEach((e) => e.classList.remove('sumindo', 'aparecendo', 'carregando'));
+    extrasEls.forEach((e) => e.classList.remove('sumindo'));
+    revImg.classList.remove('revelando');
+    akiImg.classList.remove('transicao');
+  }
+
+  // Mostra um momento do roteiro sem animação (usado no editor e no começo do jogo)
+  function mostrarEstatico(est) {
+    estado = { tipo: est.tipo, r: est.r || 0, p: est.p || 0 };
+    limpar();
+    aplicarPosicoes();
+    const R = CFG.rodadas[estado.r];
+    let emRev = false;
+    if (!R) {
+      [elPainel, elRes, elRev].forEach((e) => vis(e, false));
+      vis(elPers, true);
+    } else if (estado.tipo === 'pergunta' && R.perguntas[estado.p]) {
+      vis(elPainel, true); vis(elRes, false); vis(elRev, false); vis(elPers, true);
+      preencherPergunta(estado.r, estado.p);
+      trocarReacao(R.perguntas[estado.p].reacao, false);
+    } else if (R.tipo === 'revelacao') {
+      emRev = true;
+      vis(elPainel, false); vis(elRes, false);
+      vis(elPers, !R.revelacao.esconderPersonagem);
+      preencherRevelacao(R);
+      vis(elRev, true);
+    } else {
+      const cont = estado.tipo === 'continuar';
+      const c = cartaoDe(R, cont ? 'continuar' : 'fim');
+      vis(elPainel, false); vis(elRev, false); vis(elPers, true);
+      preencherCartao(c, R.resultado.imagem, c === R.continuar ? R.resultado : null);
+      vis(elRes, true);
+      trocarReacao((cont && c.reacao) || R.resultado.reacao, false);
+    }
+    definirFundo(fundoDe(estado), false);
+    visExtras(emRev);
+    marcarSelecao();
+  }
+
+  // ---------------- JOGO ----------------
+  function responder() {
+    if (MODO === 'editor' || ocupado || estado.tipo !== 'pergunta') return;
+    const R = CFG.rodadas[estado.r];
+    if (!R) return;
+    ocupado = true;
+    respostas.classList.add('disabled');
+    qText.innerHTML = PONTOS;
+    setTimeout(() => {
+      estado.p++;
+      if (estado.p < R.perguntas.length) {
+        aplicarPosicoes();
+        preencherPergunta(estado.r, estado.p);
+        trocarReacao(R.perguntas[estado.p].reacao);
+        definirFundo(fundoDe(estado), true);
+        ocupado = false;
+      } else {
+        fimDaRodada();
+      }
+    }, CFG.tempos.pensando);
+  }
+
+  function fimDaRodada() {
+    const R = CFG.rodadas[estado.r];
+    // revelação: o personagem some do jeito que estava na última pergunta
+    if (R.tipo === 'revelacao') { revelar(R); return; }
+    estado = { tipo: 'fim', r: estado.r, p: 0 };
+    aplicarPosicoes();
+    definirFundo(fundoDe(estado), true);
+    mostrarResultado(R);
+  }
+
+  function mostrarResultado(R) {
+    vis(elPainel, false); vis(elRev, false); vis(elPers, true);
+    preencherCartao(R.resultado);
+    vis(elRes, true);
+    elRes.classList.remove('aparecendo');
+    void elRes.offsetWidth;
+    elRes.classList.add('aparecendo');
+    trocarReacao(R.resultado.reacao);
+    ocupado = false;
+  }
+
+  // clique no "Sim"/"Não" do cartão
+  function clicarCartao() {
+    if (MODO === 'editor' || ocupado) return;
+    const R = CFG.rodadas[estado.r];
+    if (!R) return;
+    if (estado.tipo === 'fim' && R.tipo === 'resultado' && R.continuar && R.continuar.ativo) etapaContinuar(R);
+    else if (estado.tipo === 'fim' || estado.tipo === 'continuar') proximaRodada();
+  }
+
+  // depois do palpite: carrega no próprio cartão, troca a foto e mostra "Continuar"
+  function etapaContinuar(R) {
+    ocupado = true;
+    const c = R.continuar;
+    elRes.classList.remove('aparecendo');
+    elRes.classList.add('carregando');
+    $('final-name').innerHTML = PONTOS;
+    $('final-desc').textContent = '\u00a0'; // mantém a altura do cartão durante o carregamento
+    if (c.reacao) trocarReacao(c.reacao);
+    setTimeout(() => {
+      estado = { tipo: 'continuar', r: estado.r, p: 0 };
+      aplicarPosicoes();
+      preencherCartao(c, R.resultado.imagem, c === R.continuar ? R.resultado : null);
+      elRes.classList.remove('carregando');
+      definirFundo(fundoDe(estado), true);
+      ocupado = false;
+    }, CFG.tempos.carregarCartao);
+  }
+
+  function proximaRodada() {
+    const prox = estado.r + 1, R = CFG.rodadas[prox];
+    if (!R) return;
+    ocupado = true;
+    estado = { tipo: 'pergunta', r: prox, p: 0 };
+    aplicarPosicoes();
+    visExtras(false);
+    vis(elRes, false);
+    elRes.classList.remove('aparecendo', 'carregando');
+    vis(elPainel, true);
+    respostas.classList.add('disabled');
+    qNum.textContent = numeroDe(prox, 0);
+    qText.innerHTML = PONTOS;
+    trocarReacao(R.reacaoInicio || CFG.reacaoErrou);
+    setTimeout(() => {
+      if (R.perguntas.length) {
+        preencherPergunta(prox, 0);
+        trocarReacao(R.perguntas[0].reacao);
+        definirFundo(fundoDe(estado), true);
+        ocupado = false;
+      } else {
+        fimDaRodada();
+      }
+    }, CFG.tempos.pensando);
+  }
+
+  function revelar(R) {
+    ocupado = true;
+    const rv = R.revelacao;
+    elPainel.classList.add('sumindo');
+    elRes.classList.add('sumindo');
+    if (rv.esconderPersonagem) elPers.classList.add('sumindo');
+    (CFG.extras || []).forEach((x) => {
+      const e = extrasEls.get(x.id);
+      if (e && x.esconderNaRevelacao) e.classList.add('sumindo');
+    });
+    setTimeout(() => {
+      vis(elPainel, false); vis(elRes, false);
+      if (rv.esconderPersonagem) vis(elPers, false);
+      estado = { tipo: 'fim', r: estado.r, p: 0 };
+      aplicarPosicoes();
+      definirFundo(fundoDe(estado), true);
+      preencherRevelacao(R);
+      vis(elRev, true);
+      revImg.classList.remove('revelando');
+      void revImg.offsetWidth;
+      revImg.classList.add('revelando');
+    }, CFG.tempos.sumir);
+  }
+
+  function iniciarJogo(r) {
+    const R = CFG.rodadas[r];
+    if (!R) return;
+    estado = { tipo: 'pergunta', r: r, p: 0 };
+    if (R.perguntas.length) mostrarEstatico(estado);
+    else { aplicarPosicoes(); visExtras(false); vis(elPainel, false); fimDaRodada(); }
+  }
+
+  // ---------------- EDITOR ----------------
+  function alvo(id, editar) {
+    if (!id) return null;
+    if (id === 'personagem') return persAtual();
+    if (id === 'painel') return painelAtual();
+    if (id === 'resultado') return CFG.resultado;
+    const R = CFG.rodadas[estado.r];
+    if (id === 'foto') return R ? (editar ? fotoParaEditar(R, estado.tipo) : fotoDe(R, estado.tipo)) : null;
+    if (id === 'revelacao') return R ? R.revelacao : null;
+    if (id.indexOf('extra:') === 0) return (CFG.extras || []).find((x) => x.id === id.slice(6)) || null;
+    return null;
+  }
+  function marcarSelecao() {
+    document.querySelectorAll('.selecionado').forEach((e) => e.classList.remove('selecionado'));
+    if (MODO !== 'editor' || !selecionado) return;
+    const e = palco.querySelector('[data-el="' + CSS.escape(selecionado) + '"]');
+    if (e) e.classList.add('selecionado');
+  }
+  function enviar(m) { try { parent.postMessage(m, '*'); } catch (e) {} }
+
+  function iniciarEditor() {
+    document.body.classList.add('modo-editor');
+    addEventListener('message', (ev) => {
+      const m = ev.data || {};
+      if (m.tipo !== 'atualizar') return;
+      if (m.assets) { ASSETS = m.assets; NOMES = m.nomes || {}; fundoUrl = null; }
+      if (m.config) { CFG = m.config; aplicarEstilos(); }
+      if ('selecionado' in m) selecionado = m.selecionado;
+      if (m.ignorar) ignorar = m.ignorar;
+      mostrarEstatico(m.estado || estado);
+    });
+
+    let arr = null, pend = {}, pendId = null, tmr = null;
+    const flush = () => { if (pendId) enviar({ tipo: 'alterar', el: pendId, r: estado.r, t: estado.tipo, p: estado.p, props: pend }); pend = {}; pendId = null; };
+    const postar = (id, props) => {
+      if (pendId && pendId !== id) { clearTimeout(tmr); flush(); }
+      pendId = id; Object.assign(pend, props);
+      clearTimeout(tmr); tmr = setTimeout(flush, 180);
+    };
+    const selecionar = (id) => {
+      if (selecionado === id) return;
+      selecionado = id; marcarSelecao(); enviar({ tipo: 'selecionar', el: id });
+    };
+
+    palco.addEventListener('pointerdown', (e) => {
+      if (e.button !== 0) return;
+      const alvoEl = e.target.closest('[data-el]');
+      const id = alvoEl ? alvoEl.dataset.el : 'fundo';
+      selecionado = id; marcarSelecao(); enviar({ tipo: 'selecionar', el: id });
+      const o = alvo(id);
+      if (!o) return;
+      e.preventDefault();
+      const foto = id === 'foto';
+      arr = { id: id, o: o, kx: foto ? 'offX' : 'x', ky: foto ? 'offY' : 'y', sx: e.clientX, sy: e.clientY, mov: false };
+      arr.ox = o[arr.kx]; arr.oy = o[arr.ky];
+      arr.f = foto ? escala * (CFG.resultado.escala || 1) : escala;
+      palco.setPointerCapture(e.pointerId);
+    });
+    palco.addEventListener('pointermove', (e) => {
+      if (!arr) return;
+      const dx = (e.clientX - arr.sx) / arr.f, dy = (e.clientY - arr.sy) / arr.f;
+      if (!arr.mov && Math.abs(dx) + Math.abs(dy) < 2) return;
+      if (!arr.mov) arr.o = alvo(arr.id, true);
+      arr.mov = true;
+      arr.o[arr.kx] = Math.round(arr.ox + dx);
+      arr.o[arr.ky] = Math.round(arr.oy + dy);
+      aplicarPosicoes();
+    });
+    const soltar = () => {
+      if (arr && arr.mov) {
+        const props = {}; props[arr.kx] = arr.o[arr.kx]; props[arr.ky] = arr.o[arr.ky];
+        enviar({ tipo: 'alterar', el: arr.id, r: estado.r, t: estado.tipo, p: estado.p, props: props });
+      }
+      arr = null;
+    };
+    palco.addEventListener('pointerup', soltar);
+    palco.addEventListener('pointercancel', soltar);
+
+    palco.addEventListener('wheel', (e) => {
+      const alvoEl = e.target.closest('[data-el]');
+      if (!alvoEl) return;
+      const id = alvoEl.dataset.el, o = alvo(id, true);
+      if (!o) return;
+      e.preventDefault();
+      selecionar(id);
+      const d = e.deltaY || e.deltaX;
+      const dir = d < 0 ? 1 : -1;
+      const props = {};
+      if (e.altKey) {
+        o.rotacao = Math.round(((o.rotacao || 0) + dir * (e.shiftKey ? 1 : 5)) * 10) / 10;
+        props.rotacao = o.rotacao;
+      } else {
+        const k = id === 'foto' ? 'zoom' : 'escala';
+        const passo = e.shiftKey ? 1.01 : 1.05;
+        const atual = o[k] == null ? 1 : o[k];
+        o[k] = Math.round(Math.min(20, Math.max(0.05, atual * (dir > 0 ? passo : 1 / passo))) * 1000) / 1000;
+        props[k] = o[k];
+      }
+      aplicarPosicoes();
+      postar(id, props);
+    }, { passive: false });
+
+    addEventListener('keydown', (e) => {
+      enviar({ tipo: 'tecla', key: e.key, shift: e.shiftKey, ctrl: e.ctrlKey || e.metaKey });
+      if (e.key.indexOf('Arrow') === 0 || ((e.ctrlKey || e.metaKey) && /^[zys]$/i.test(e.key))) e.preventDefault();
+    });
+    addEventListener('dragover', (e) => e.preventDefault());
+    addEventListener('drop', (e) => {
+      e.preventDefault();
+      const t = e.target && e.target.closest ? e.target.closest('[data-el]') : null;
+      const arquivos = Array.from((e.dataTransfer && e.dataTransfer.files) || []);
+      if (arquivos.length) enviar({ tipo: 'soltar', el: t ? t.dataset.el : 'fundo', arquivos: arquivos });
+    });
+    enviar({ tipo: 'pronto' });
+  }
+
+  // ---------------- INÍCIO ----------------
+  addEventListener('resize', ajustarPalco);
+  ajustarPalco();
+  $('btn-sim').addEventListener('click', clicarCartao);
+  $('btn-nao').addEventListener('click', clicarCartao);
+
+  if (MODO === 'editor') {
+    if (CFG) { aplicarEstilos(); mostrarEstatico(estado); }
+    iniciarEditor();
+  } else if (CFG) {
+    aplicarEstilos();
+    iniciarJogo(window.GAME_START || 0);
+    if (window.parent !== window) {
+      addEventListener('keydown', (e) => { if (e.key === 'Escape') enviar({ tipo: 'esc' }); });
+    }
+  }
+})();
+</script>
+</body>
+</html>
