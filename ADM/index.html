@@ -1,0 +1,349 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ADM ao vivo · MATE o Akinator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@600;800;900&display=swap">
+<script>
+/* TRAVA DOS SITES (modo ADM): só abre no navegador da equipe */
+(function () {
+  var nome = "" || location.pathname.split("/").filter(Boolean)[0] || "";
+  window.ADM_SITE = nome;
+  if (location.protocol === "file:" || !nome) return;
+  var espera = document.createElement("style");
+  espera.textContent = "body{visibility:hidden}";
+  document.head.appendChild(espera);
+  var pronto = function () { if (espera.parentNode) espera.parentNode.removeChild(espera); };
+  var s = document.createElement("script");
+  s.src = "/trava.js";
+  s.setAttribute("data-site", nome);
+  s.setAttribute("data-modo", "adm");
+  s.onload = pronto; s.onerror = pronto;
+  document.head.appendChild(s);
+  setTimeout(pronto, 9000);
+})();
+</script>
+<style>
+:root{--fundo:#0f1218;--painel:#171b24;--painel2:#1e2430;--borda:#2b3342;--texto:#e8edf5;--suave:#93a0b4;--acento:#22d3ee;--ok:#36c47a;--perigo:#ff5b5b;--aviso:#ffb020}
+*{box-sizing:border-box}
+body{margin:0;background:var(--fundo);color:var(--texto);font-family:Nunito,system-ui,sans-serif;font-size:14px}
+header{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:12px;padding:12px 18px;background:#0b0e13;border-bottom:1px solid var(--borda)}
+header h1{font-family:"Lilita One",sans-serif;font-weight:400;font-size:22px;margin:0;letter-spacing:.5px}
+header h1 b{color:var(--acento);font-weight:400}
+.status{margin-left:auto;display:flex;align-items:center;gap:8px;color:var(--suave);font-weight:800;font-size:13px}
+.bola{width:10px;height:10px;border-radius:50%;background:#555}
+.bola.on{background:var(--ok);box-shadow:0 0 10px var(--ok)}
+main{max-width:1100px;margin:0 auto;padding:18px;display:grid;grid-template-columns:360px 1fr;gap:16px}
+@media (max-width:900px){main{grid-template-columns:1fr}}
+.card{background:var(--painel);border:1px solid var(--borda);border-radius:14px;padding:14px 16px;margin-bottom:16px}
+.card h2{margin:0 0 10px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--acento)}
+.ajuda{color:var(--suave);font-size:12.5px;margin:6px 0}
+.btn{background:var(--painel2);color:var(--texto);border:1px solid var(--borda);border-radius:9px;padding:9px 12px;font:inherit;font-weight:800;cursor:pointer}
+.btn:hover{border-color:var(--acento)}
+.btn.prim{background:var(--acento);color:#00222b;border-color:var(--acento)}
+.btn.perigo{border-color:#6b2a2a;color:#ffb3b3}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.linha{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0}
+select,input,textarea{background:#0d1117;color:var(--texto);border:1px solid var(--borda);border-radius:8px;padding:8px 10px;font:inherit}
+textarea{width:100%;resize:vertical;min-height:60px}
+input.txt{width:100%}
+input.mudou,textarea.mudou{border-color:var(--aviso);box-shadow:0 0 0 1px var(--aviso)}
+.jog{display:flex;gap:10px;align-items:flex-start;padding:9px 10px;border:1px solid var(--borda);border-radius:10px;margin:6px 0;background:var(--painel2)}
+.jog .onde{font-weight:900}
+.jog .txt{color:var(--suave);font-size:12.5px}
+.vazio{color:var(--suave);font-style:italic}
+details.rod{border:1px solid var(--borda);border-radius:12px;margin:10px 0;background:var(--painel2)}
+details.rod summary{cursor:pointer;padding:10px 12px;font-weight:900;display:flex;gap:10px;align-items:center}
+details.rod .corpo{padding:4px 12px 12px}
+.perg{display:grid;grid-template-columns:44px 1fr auto;gap:8px;align-items:center;margin:5px 0}
+.num{background:#3a1222;color:#ffd0dc;border-radius:7px;text-align:center;font-weight:900;padding:6px 0;font-size:12.5px}
+.aqui{outline:2px solid var(--ok);outline-offset:2px}
+.tag{font-size:11.5px;font-weight:800;border-radius:20px;padding:2px 8px;background:#123828;color:#8ff0bf}
+.mini{padding:5px 9px;font-size:12px}
+.campo{display:grid;grid-template-columns:150px 1fr;gap:8px;align-items:center;margin:6px 0}
+.campo label{color:var(--suave);font-size:12.5px}
+.sep{margin:12px 0 4px;font-size:11.5px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;color:var(--suave)}
+footer{position:sticky;bottom:0;display:flex;gap:10px;align-items:center;padding:12px 18px;background:#0b0e13;border-top:1px solid var(--borda)}
+footer .cont{color:var(--aviso);font-weight:900}
+.aviso{background:#3a2a10;border:1px solid #6b5420;color:#ffd99a;border-radius:10px;padding:10px 12px;margin:0 0 14px}
+.toast{position:fixed;left:50%;bottom:80px;transform:translateX(-50%);background:#0b2a33;border:1px solid var(--acento);padding:10px 16px;border-radius:10px;font-weight:800;opacity:0;transition:opacity .3s;pointer-events:none}
+.toast.on{opacity:1}
+</style>
+</head>
+<body>
+<header>
+  <h1>ADM <b>ao vivo</b></h1>
+  <span id="titulo" class="ajuda" style="margin:0"></span>
+  <div class="status"><span class="bola" id="bola"></span><span id="status">conectando…</span></div>
+</header>
+<main>
+  <section>
+    <div id="aviso-local" class="aviso" style="display:none">Aberto direto do PC: aqui só dá pra ver o roteiro. Pra controlar o jogo ao vivo, abra pelo site: <b id="link-site"></b></div>
+    <div class="card">
+      <h2>👥 Quem está jogando</h2>
+      <div id="jogadores"><div class="vazio">Ninguém com o jogo aberto agora.</div></div>
+    </div>
+    <div class="card">
+      <h2>🎮 Controle</h2>
+      <div class="linha"><button class="btn prim" id="b-reset">🔄 Resetar o jogo</button></div>
+      <p class="ajuda">Todo mundo que está com o jogo aberto volta pro começo (menu).</p>
+      <div class="linha"><select id="sel-ir" style="flex:1;min-width:0"></select><button class="btn" id="b-ir">⏭ Mandar pra lá</button></div>
+      <p class="ajuda">Leva todo mundo direto pra esse ponto do jogo.</p>
+      <div class="linha"><button class="btn" id="b-recarregar">♻ Recarregar a página dos jogadores</button></div>
+      <p class="ajuda" id="ult-cmd"></p>
+    </div>
+    <div class="card">
+      <h2>🔤 Textos e tempos</h2>
+      <div id="gerais"></div>
+    </div>
+  </section>
+  <section>
+    <div class="card">
+      <h2>📜 Roteiro (edite e publique: muda na hora pra quem está jogando)</h2>
+      <p class="ajuda">Campo com borda amarela = mudado e ainda não publicado. As imagens e o resto você muda no editor e exporta de novo.</p>
+      <div id="roteiro"></div>
+    </div>
+  </section>
+</main>
+<footer>
+  <span class="cont" id="cont"></span>
+  <button class="btn prim" id="b-publicar" disabled>📡 Publicar alterações</button>
+  <button class="btn" id="b-descartar" disabled>Descartar</button>
+  <span style="flex:1"></span>
+  <button class="btn perigo" id="b-original">🗑 Voltar tudo ao roteiro original</button>
+</footer>
+<div class="toast" id="toast"></div>
+<script>
+window.ADM_BASE = {"versao":16,"fonte":{"familia":"Arima","google":true},"fundo":{"imagem":"a_fundo","cor":"#363636","modo":"cobrir","posX":0,"posY":0,"desfoque":0,"escurecer":0,"zoom":1,"x":0,"y":0,"rotacao":0,"espelhar":false,"brilho":1,"saturacao":1},"personagem":{"x":594,"y":535,"largura":320,"altura":420,"escala":1.32,"rotacao":0,"espelharX":true,"espelharY":false,"sombra":true,"opacidade":1,"z":10},"painel":{"x":990,"y":540,"largura":420,"escala":1,"rotacao":0},"resultado":{"x":990,"y":540,"largura":420,"escala":0.9,"rotacao":0,"fotoLargura":210,"fotoAltura":210,"mostrarCreditos":true,"mostrarCopyright":true,"topoLargura":0,"topoAltura":0,"caixaLargura":0,"caixaAltura":0,"fotoPreencher":false},"cores":{"numeroFundo":"#183e52","numeroTexto":"#ffffff","losango":"#728c9d","perguntaFundo":"#ffffff","perguntaFundoAlfa":0.85,"perguntaTexto":"#1f2d3d","respostasFundo":"#dce6f2","respostasFundoAlfa":0.65,"respostasBorda":"#ffffff","respostasBordaAlfa":0.8,"respostaTexto":"#1a2a3a","hover1":"#ffffff","hover2":"#edf3f9","spinner":"#1f3a4b","resFundo":"#dce6f2","resFundoAlfa":0.75,"resBorda":"#ffffff","resBordaAlfa":0.85,"tituloFundo":"#1f3a4b","tituloTexto":"#ffffff","nome":"#1f3a4b","desc":"#556b7d","botaoFundo":"#1f3a4b","botaoHover":"#122532","botaoTexto":"#ffffff","creditos":"#1f3a4b","copyright":"#556b7d"},"tamanhos":{"numero":18,"pergunta":16,"resposta":15,"titulo":16,"nome":22,"desc":14,"botao":15,"creditos":16},"textos":{"tituloPagina":"MATE o Akinator","respostas":["Sim","Não","Não sei","Provavelmente sim","Provavelmente não"],"euAchoQue":"Eu acho que","sim":"Sim","nao":"Não","copyright":"© Copyright / IP Policy"},"tempos":{"pensando":1200,"transicaoReacao":600,"entradaResultado":500,"sumir":700,"revelacao":1400,"carregarCartao":1200,"fundo":600,"efeitos":600},"reacaoErrou":"a_gcvu3rh","trava":{"ativa":true,"site":""},"extras":[{"id":"eojj20jp","nome":"Imagem do ChatGPT 13 de out. de 2026, 18_28_55","imagem":"a_qj0kl6b","x":960,"y":540,"largura":700,"escala":1,"rotacao":0,"espelharX":false,"espelharY":false,"opacidade":1,"z":10,"visivel":true,"esconderNaRevelacao":false,"noMenu":false,"onde":"jogo","animacao":"nenhuma","camadaFundo":true,"tela":true,"ajuste":{"modo":"esticar","posX":50,"posY":50,"zoom":1,"x":0,"y":0,"rotacao":0,"espelhar":false,"desfoque":0,"escurecer":0,"brilho":1,"saturacao":1}},{"id":"ewoi9s32","nome":"Modelo minimalista com dois painéis brancos","imagem":"a_82vda5t","x":960,"y":540,"largura":700,"escala":1,"rotacao":0,"espelharX":false,"espelharY":false,"opacidade":0.33,"z":1,"visivel":true,"esconderNaRevelacao":false,"noMenu":false,"onde":"jogo","animacao":"nenhuma","camadaFundo":true,"tela":true,"ajuste":{"modo":"esticar","posX":50,"posY":50,"zoom":1,"x":0,"y":20,"rotacao":0,"espelhar":false,"desfoque":0,"escurecer":0,"brilho":1,"saturacao":1}}],"rodadas":[{"perguntas":[{"texto":"O seu personagem é uma menina?","reacao":"a_vullv0q","efeitos":{},"transicao":{"entrada":null,"saida":null}},{"texto":"O seu personagem existe na vida real?","reacao":"a_nvlfsnp"},{"texto":"O seu personagem é um ser vivo?","reacao":"a_gcvu3rh"},{"texto":"O seu personagem costuma ser encontrado dentro de casa?","reacao":"a_vullv0q"},{"texto":"O seu personagem pode ser segurado com apenas uma mão?","reacao":"a_lq5qe5a"},{"texto":"O seu personagem costuma ser encontrado na cozinha?","reacao":"a_vullv0q"},{"texto":"O seu personagem é usado durante as refeições?","reacao":"a_42fjkiq"},{"texto":"O seu personagem possui alguma parte feita de metal?","reacao":"a_nvlfsnp"},{"texto":"O seu personagem possui um cabo?","reacao":"a_63itt2b"},{"texto":"O seu personagem pode ser usado para preparar alimentos?","reacao":"a_vullv0q"},{"texto":"O seu personagem serve para separar coisas em partes menores?","reacao":"a_nvlfsnp"},{"texto":"O seu personagem possui alguma parte afiada?","reacao":"a_lq5qe5a"},{"texto":"O seu personagem possui uma lâmina?","reacao":"a_ldjr1uf"},{"texto":"O seu personagem é usado principalmente para cortar?","reacao":"a_nvlfsnp"}],"tipo":"resultado","reacaoInicio":null,"resultado":{"nome":"Faca","desc":"Objeto","creditos":"Enviado por StefanieDir67","imagem":"a_ggclvyb","reacao":"a_dwt1uxz","foto":{"zoom":2.25,"offX":21,"offY":0,"ajuste":"conter","espelharX":false,"rotacao":0},"mostrarTitulo":true,"titulo":"","sim":"","nao":""},"revelacao":{"imagem":null,"x":960,"y":540,"largura":1100,"altura":900,"escala":1,"rotacao":0,"espelharX":false,"espelharY":false,"sombra":true,"esconderPersonagem":true,"estilo":"sombrio","tempoPreto":1.5,"espera":1,"aparecer":"degraus","degraus":6,"tempoAparecer":2.5,"filme":{"ativo":true,"intensidade":0.7,"sepia":true},"falas":["Olá.","Você achou mesmo que podia me matar?"],"falaFonte":"VT323","falaTamanho":54,"falaCor":"#ffffff","falaY":1010,"falaVelocidade":14,"falaPausa":1.2,"falaSom":true,"falaTom":220,"falaVolume":0.6,"jumpscare":{"ativo":false,"depois":1,"zoom":2.6,"duracao":1.2,"tremor":25,"glitch":true,"flash":true,"flashCor":"#ff0000","grito":true,"volume":0.4,"fim":"preto"},"falaX":960,"ataque":{"ativo":true,"imagem":null,"quadros":5,"duracoes":null,"golpe":2,"x":960,"y":520,"altura":820,"rotacao":0,"espelhar":false,"velocidade":1,"vezes":1,"depois":0.35,"som":true,"volume":0.6,"tremor":14,"flash":true,"flashCor":"#ff0000","flashForca":0.3,"tremerAlvo":false,"piscarAlvo":false,"tirarPreto":true,"contorno":true},"textoSome":0.4,"someAposFalas":true,"bug":{"ativo":true,"depois":0.15,"duracao":0.9,"glitch":1,"tremor":14,"cores":true,"imagem":true,"som":true,"volume":0.4},"avancar":"clique","cliqueCompleta":true,"seta":{"ativo":true,"texto":"▼","cor":"#ffffff","tamanho":0.7,"animacao":"pular","posicao":"fim"},"imagem2":{"imagem":null,"quando":"fimAtaque","dx":0,"dy":0,"escala":1,"aparecer":"corte","tempoAparecer":0.2,"fica":0,"tremer":10,"piscarVermelho":true,"noBug":true,"modo":"leve","forca":1}},"fundo":null,"continuar":{"ativo":true,"nome":"Continuar","desc":"-","creditos":"","imagem":null,"reacao":"a_vullv0q","foto":{"zoom":1,"offX":0,"offY":0,"ajuste":"cobrir","espelharX":false,"rotacao":0},"mostrarTitulo":true,"titulo":"‎ ","sim":"","nao":""},"efeitos":{},"item":{"comportamento":"andar","imagem":"a_m21ja55","largura":150,"escala":1,"rotacao":0,"espelharX":false,"opacidade":1,"z":15,"desde":"resultado","saiDaFoto":true,"x":1500,"y":820,"velocidade":170,"distancia":160,"balancar":true,"virar":false,"area":{"x1":0,"x2":1920,"y1":0,"y2":1080},"sujeira":{"cor":"#5bd62a","opacidade":0.55,"frequencia":1.2,"tamanho":60,"max":60,"escorrer":true,"gotas":true,"fumaca":true,"frente":true,"duraNaTela":30,"someEm":3},"aparicoes":{"quantidade":3,"opacidade":0.1,"tamanho":320,"ciclo":6,"imagens":[],"emoji":"","animacao":"flutuar","desfoque":0,"rampa":6},"clima":{"ativo":false,"escurecer":0.25,"dessaturar":0.5,"tom":"#4a0000","tomForca":0.25,"vinheta":0.5,"nevoa":0.3},"emoji":"🔪","zona":{"modo":"livre","margem":40,"porLado":false,"esq":40,"dir":40,"cima":40,"baixo":40,"x":812,"y":540,"w":765,"h":565,"mostrar":true},"nascer":"longe","surgir":"pop","surgirDuracao":0.6,"porCima":true},"lista":{"ativo":true,"nome":"","imagem":"a_m21ja55","emoji":"🔪","oculto":null},"series":[],"fundoAjuste":null,"ondas":null},{"perguntas":[{"texto":"O seu personagem deve ser mantido longe de crianças?","reacao":"a_oldpfpv","efeitos":{"glitch":{"intensidade":0.7,"frequencia":1,"duracao":1,"atraso":0,"ativo":true,"entrada":0.05,"saida":0.2,"repetir":0,"variacao":"constante","audio":{"tipo":"padrao","som":null,"volume":0.6,"quando":"rajada","tom":1,"fadeOut":0.05}}},"transicao":{"entrada":null,"saida":null}},{"texto":"O seu personagem pode ser perigoso para seres humanos?","reacao":"a_ldjr1uf","efeitos":{"tremor":{"intensidade":6,"modo":"constante","duracao":1,"atraso":0,"ativo":true,"entrada":0.05,"saida":0.2,"variacao":"constante","audio":{"tipo":"padrao","som":null,"volume":0.4,"quando":"inicio"},"repetir":0},"escuridao":{"intensidade":0.95,"tamanho":0.15,"piscar":false,"centro":"tela","duracao":1,"atraso":0,"ativo":false,"entrada":0.05,"saida":0.2,"repetir":0,"variacao":"constante","audio":{"tipo":"padrao","som":null,"volume":0.4,"quando":"inicio"}},"zoom":{"intensidade":0.08,"periodo":2,"duracao":1,"atraso":0,"ativo":true,"entrada":0.05,"saida":0.2,"variacao":"constante","audio":{"tipo":"padrao","som":null,"volume":0.4,"quando":"inicio"},"repetir":0}},"transicao":{"entrada":null,"saida":null}},{"texto":"O seu personagem aparece com frequência em histórias de mistério?","reacao":"a_nvlfsnp","efeitos":{},"transicao":{"entrada":null,"saida":null}},{"texto":"O seu personagem pode ser encontrado em um recipiente?","reacao":"a_63itt2b"},{"texto":"O seu personagem pode assumir a forma de um líquido?","reacao":"a_nvlfsnp","efeitos":{"imagem":{"imagens":[{"imagem":"a_u6r4ris","x":960,"y":540,"largura":500,"escala":1.76,"rotacao":0,"opacidade":0.06,"z":25,"animEntrada":"pop","animSaida":"glitch","movimento":"nada","forcaMov":1,"atraso":0}],"duracao":0.6,"atraso":0,"entrada":0.15,"saida":0.3,"ativo":true,"variacao":"constante","audio":{"tipo":"padrao","som":null,"volume":0.6,"quando":"inicio","tom":1,"fadeOut":0.05},"repetir":0},"escuridao":{"intensidade":0.7,"tamanho":0.45,"piscar":false,"centro":"tela","duracao":1,"atraso":0,"ativo":true,"entrada":0.05,"saida":0.2,"variacao":"constante","audio":{"tipo":"padrao","som":null,"volume":0.6,"quando":"inicio","tom":1,"fadeOut":0.05},"repetir":0},"glitch":{"intensidade":0.5,"frequencia":0.5,"duracao":1,"atraso":0,"ativo":true,"entrada":0.05,"saida":0.2,"variacao":"constante","audio":{"tipo":"padrao","som":null,"volume":0.6,"quando":"rajada","tom":1,"fadeOut":0.05},"repetir":0}},"transicao":{"entrada":null,"saida":null}},{"texto":"O seu personagem costuma possuir algum tipo de aviso em sua embalagem?","reacao":"a_63itt2b"},{"texto":"O seu personagem pode causar intoxicação?","reacao":"a_ldjr1uf"},{"texto":"O seu personagem pode ser encontrado na natureza?","reacao":"a_gcvu3rh"},{"texto":"O seu personagem está associado a um símbolo de caveira?","reacao":"a_ldjr1uf","efeitos":{"escuridao":{"intensidade":0.4,"tamanho":0.15,"piscar":true,"centro":"tela","duracao":1,"atraso":0,"ativo":true,"entrada":0.05,"saida":0.2,"repetir":0,"variacao":"constante","audio":{"tipo":"padrao","som":null,"volume":0.4,"quando":"inicio"}},"zoom":{"intensidade":0.08,"periodo":2,"duracao":1,"atraso":0,"ativo":true,"entrada":0.05,"saida":0.2,"repetir":0,"variacao":"constante","audio":{"tipo":"padrao","som":null,"volume":0.4,"quando":"inicio"}},"filtro":{"pb":0,"escurecer":0,"contraste":0,"tom":"#8a0000","tomForca":0.3,"inverter":false,"duracao":0,"atraso":0,"ativo":false,"entrada":0.4,"saida":0.4,"variacao":"constante","audio":{"tipo":"padrao","som":null,"volume":0.4,"quando":"inicio"}},"filme":{"intensidade":0.6,"sepia":true,"duracao":0,"atraso":0,"ativo":false,"entrada":0.4,"saida":0.4,"variacao":"constante","audio":{"tipo":"padrao","som":null,"volume":0.4,"quando":"loop"}},"aparicoes":{"imagem":null,"imagens":[],"emoji":"👻","quantidade":3,"opacidade":0.1,"tamanho":320,"ciclo":6,"animacao":"flutuar","desfoque":0,"duracao":0,"atraso":0,"ativo":false,"entrada":0.4,"saida":0.4,"variacao":"constante","audio":{"tipo":"padrao","som":null,"volume":0.4,"quando":"inicio"}},"batimento":{"cor":"#8a0000","intensidade":0.6,"bpm":70,"zoom":true,"som":false,"volume":0.7,"duracao":0,"atraso":0,"ativo":false,"entrada":0.4,"saida":0.4,"variacao":"constante","audio":{"tipo":"mudo","som":null,"volume":0.7,"quando":"rajada"}},"nevoa":{"intensidade":0.7,"duracao":0,"atraso":0,"ativo":false,"entrada":0.4,"saida":0.4,"variacao":"constante","audio":{"tipo":"padrao","som":null,"volume":0.4,"quando":"loop"}}},"transicao":{"entrada":null,"saida":null}},{"texto":"O seu personagem é conhecido principalmente por ser tóxico?","reacao":"a_42fjkiq"}],"tipo":"resultado","reacaoInicio":null,"resultado":{"nome":"Veneno","desc":"-","creditos":"Enviado por kekw95","imagem":"a_4mlscok","reacao":"a_dwt1uxz","foto":{"zoom":1,"offX":0,"offY":0,"ajuste":"cobrir","espelharX":false,"rotacao":0},"mostrarTitulo":true,"titulo":"","sim":"","nao":""},"revelacao":{"imagem":null,"x":960,"y":540,"largura":1100,"altura":900,"escala":1,"rotacao":0,"espelharX":false,"espelharY":false,"sombra":true,"esconderPersonagem":true,"estilo":"sombrio","tempoPreto":1.5,"espera":1,"aparecer":"degraus","degraus":6,"tempoAparecer":2.5,"filme":{"ativo":true,"intensidade":0.7,"sepia":true},"falas":["Olá.","Você achou mesmo que podia me matar?"],"falaFonte":"VT323","falaTamanho":54,"falaCor":"#ffffff","falaY":1010,"falaVelocidade":14,"falaPausa":1.2,"falaSom":true,"falaTom":220,"falaVolume":0.6,"jumpscare":{"ativo":false,"depois":1,"zoom":2.6,"duracao":1.2,"tremor":25,"glitch":true,"flash":true,"flashCor":"#ff0000","grito":true,"volume":0.4,"fim":"preto"},"falaX":960,"ataque":{"ativo":true,"imagem":null,"quadros":5,"duracoes":null,"golpe":2,"x":960,"y":520,"altura":820,"rotacao":0,"espelhar":false,"velocidade":1,"vezes":1,"depois":0.35,"som":true,"volume":0.6,"tremor":14,"flash":true,"flashCor":"#ff0000","flashForca":0.3,"tremerAlvo":false,"piscarAlvo":false,"tirarPreto":true,"contorno":true},"textoSome":0.4,"someAposFalas":true,"bug":{"ativo":true,"depois":0.15,"duracao":0.9,"glitch":1,"tremor":14,"cores":true,"imagem":true,"som":true,"volume":0.4},"avancar":"clique","cliqueCompleta":true,"seta":{"ativo":true,"texto":"▼","cor":"#ffffff","tamanho":0.7,"animacao":"pular","posicao":"fim"},"imagem2":{"imagem":null,"quando":"fimAtaque","dx":0,"dy":0,"escala":1,"aparecer":"corte","tempoAparecer":0.2,"fica":0,"tremer":10,"piscarVermelho":true,"noBug":true,"modo":"leve","forca":1}},"fundo":null,"continuar":{"ativo":true,"nome":"Continuar","desc":"","creditos":"","imagem":null,"reacao":"a_42fjkiq","foto":{"zoom":1,"offX":0,"offY":0,"ajuste":"cobrir","espelharX":false,"rotacao":0},"mostrarTitulo":true,"titulo":"‎ ","sim":"","nao":"","efeitos":{"glitch":{"intensidade":0.5,"frequencia":0.5,"duracao":1,"atraso":0,"ativo":true,"entrada":0.05,"saida":0.2,"variacao":"constante","audio":{"tipo":"padrao","som":null,"volume":0.4,"quando":"rajada"},"repetir":0}}},"efeitos":{},"item":{"comportamento":"andarSujar","imagem":"a_3dv65vs","largura":160,"escala":1,"rotacao":0,"espelharX":false,"opacidade":1,"z":15,"desde":"resultado","saiDaFoto":true,"x":1500,"y":820,"velocidade":140,"distancia":160,"balancar":true,"virar":false,"area":{"x1":0,"x2":1920,"y1":0,"y2":1080},"sujeira":{"cor":"#5bd62a","opacidade":0.55,"frequencia":1.2,"tamanho":60,"max":60,"escorrer":true,"gotas":true,"fumaca":true,"frente":true,"duraNaTela":30,"someEm":3},"aparicoes":{"quantidade":3,"opacidade":0.1,"tamanho":320,"ciclo":6,"imagens":[],"emoji":"","animacao":"flutuar","desfoque":0,"rampa":6},"clima":{"ativo":false,"escurecer":0.25,"dessaturar":0.5,"tom":"#4a0000","tomForca":0.25,"vinheta":0.5,"nevoa":0.3},"emoji":"","zona":{"modo":"livre","margem":40,"porLado":false,"esq":40,"dir":40,"cima":40,"baixo":40,"x":812,"y":540,"w":765,"h":565,"mostrar":true},"nascer":"longe","surgir":"pop","surgirDuracao":0.6,"porCima":true},"lista":{"ativo":true,"nome":"","imagem":"a_3dv65vs","emoji":"","oculto":null},"series":[],"fundoAjuste":null},{"perguntas":[{"texto":"O s-seu personagem consegue falar?","reacao":"a_ldjr1uf","efeitos":{"glitch":{"intensidade":0.5,"frequencia":0.5,"duracao":1,"atraso":0,"ativo":true,"entrada":0.05,"saida":0.2,"variacao":"constante","audio":{"tipo":"padrao","som":null,"volume":0.6,"quando":"rajada","tom":1,"fadeOut":0.05},"repetir":0}},"transicao":{"entrada":null,"saida":null}},{"texto":"O seu personagem possui poderes sobrenaturais?","reacao":"a_lq5qe5a","efeitos":{"batimento":{"cor":"#8a0000","intensidade":0.6,"bpm":70,"zoom":true,"som":false,"volume":0.7,"duracao":0,"atraso":0,"ativo":true,"entrada":0.4,"saida":0.4,"variacao":"constante","audio":{"tipo":"padrao","som":null,"volume":0.7,"quando":"rajada"}}},"transicao":{"entrada":null,"saida":null}},{"texto":"O seu personagem usa alguma coisa na cabeça?","reacao":"a_nvlfsnp"},{"texto":"O seu personagem costuma fazer muitas perguntas?","reacao":"a_lq5qe5a"},{"texto":"O seu personagem tenta descobrir em quem você está pensando?","reacao":"a_42fjkiq","efeitos":{"aparicoes":{"imagem":null,"imagens":[],"emoji":"👁️","quantidade":11,"opacidade":0.1,"tamanho":320,"ciclo":6,"animacao":"flutuar","desfoque":0,"duracao":0,"atraso":0,"ativo":true,"entrada":0.4,"saida":0.4,"variacao":"constante","audio":{"tipo":"padrao","som":null,"volume":0.6,"quando":"inicio","tom":1,"fadeOut":0.05}}},"transicao":{"entrada":null,"saida":null}},{"texto":"O seu personagem usa um turbante?","reacao":"a_gbqe4gh","efeitos":{"glitch":{"intensidade":0.7,"frequencia":1,"duracao":1,"atraso":0,"ativo":true,"entrada":0.05,"saida":0.2,"variacao":"constante","audio":{"tipo":"padrao","som":null,"volume":0.4,"quando":"rajada"},"repetir":0}},"transicao":{"entrada":null,"saida":null}},{"texto":"O seu personagem consegue adivinhar personagens?","reacao":"a_tc15bsk"},{"texto":"O seu personagem está fazendo estas perguntas agora?","reacao":"a_knkx7sf","efeitos":{"glitch":{"intensidade":0.5,"frequencia":0.5,"duracao":0,"atraso":0,"ativo":true,"entrada":0.4,"saida":0.4,"variacao":"constante","audio":{"tipo":"padrao","som":null,"volume":0.6,"quando":"rajada","tom":1,"fadeOut":0.05}},"aparicoes":{"imagem":null,"imagens":[],"emoji":"👁️","quantidade":8,"opacidade":0.1,"tamanho":320,"ciclo":6,"animacao":"flutuar","desfoque":0,"duracao":0,"atraso":0,"ativo":true,"entrada":0.4,"saida":0.4,"variacao":"constante","audio":{"tipo":"padrao","som":null,"volume":0.6,"quando":"inicio","tom":1,"fadeOut":0.05}}},"transicao":{"entrada":null,"saida":null}}],"tipo":"resultado","reacaoInicio":null,"resultado":{"nome":"Akinator","desc":"Gênio","creditos":"","imagem":"a_cfn0zsf","reacao":"a_76gzcik","foto":{"zoom":1.08,"offX":5,"offY":-3,"ajuste":"cobrir","espelharX":false,"rotacao":0},"mostrarTitulo":true,"titulo":"","sim":"","nao":""},"revelacao":{"imagem":null,"x":960,"y":540,"largura":1100,"altura":900,"escala":1,"rotacao":0,"espelharX":false,"espelharY":false,"sombra":true,"esconderPersonagem":true,"estilo":"sombrio","tempoPreto":1.5,"espera":1,"aparecer":"degraus","degraus":6,"tempoAparecer":2.5,"filme":{"ativo":true,"intensidade":0.7,"sepia":true},"falas":["Olá.","Você achou mesmo que podia me matar?"],"falaFonte":"VT323","falaTamanho":54,"falaCor":"#ffffff","falaY":1010,"falaVelocidade":14,"falaPausa":1.2,"falaSom":true,"falaTom":220,"falaVolume":0.6,"jumpscare":{"ativo":false,"depois":1,"zoom":2.6,"duracao":1.2,"tremor":25,"glitch":true,"flash":true,"flashCor":"#ff0000","grito":true,"volume":0.4,"fim":"preto"},"falaX":960,"ataque":{"ativo":true,"imagem":null,"quadros":5,"duracoes":null,"golpe":2,"x":960,"y":520,"altura":820,"rotacao":0,"espelhar":false,"velocidade":1,"vezes":1,"depois":0.35,"som":true,"volume":0.6,"tremor":14,"flash":true,"flashCor":"#ff0000","flashForca":0.3,"tremerAlvo":false,"piscarAlvo":false,"tirarPreto":true,"contorno":true},"textoSome":0.4,"someAposFalas":true,"bug":{"ativo":true,"depois":0.15,"duracao":0.9,"glitch":1,"tremor":14,"cores":true,"imagem":true,"som":true,"volume":0.4},"avancar":"clique","cliqueCompleta":true,"seta":{"ativo":true,"texto":"▼","cor":"#ffffff","tamanho":0.7,"animacao":"pular","posicao":"fim"},"imagem2":{"imagem":null,"quando":"fimAtaque","dx":0,"dy":0,"escala":1,"aparecer":"corte","tempoAparecer":0.2,"fica":0,"tremer":10,"piscarVermelho":true,"noBug":true,"modo":"leve","forca":1}},"fundo":null,"continuar":{"ativo":true,"nome":"Continuar...?","desc":"...","creditos":"","imagem":null,"reacao":"a_uj9gq7l","foto":{"zoom":1.08,"offX":3,"offY":-5,"ajuste":"cobrir","espelharX":false,"rotacao":0},"mostrarTitulo":true,"titulo":"‎ ...","sim":"Sim?","nao":"Sim!","efeitos":{"batimento":{"cor":"#8a0000","intensidade":0.6,"bpm":70,"zoom":true,"som":false,"volume":0.7,"duracao":0,"atraso":0,"ativo":true,"entrada":0.4,"saida":0.4,"variacao":"constante","audio":{"tipo":"mudo","som":null,"volume":0.7,"quando":"rajada"}},"zoom":{"intensidade":0.08,"periodo":2,"duracao":0,"atraso":0,"ativo":false,"entrada":0.4,"saida":0.4,"variacao":"constante","audio":{"tipo":"padrao","som":null,"volume":0.4,"quando":"inicio"}},"escuridao":{"intensidade":0.7,"tamanho":0.45,"piscar":false,"centro":"tela","duracao":0,"atraso":0,"ativo":false,"entrada":0.4,"saida":0.4,"variacao":"constante","audio":{"tipo":"padrao","som":null,"volume":0.4,"quando":"inicio"}},"tremor":{"intensidade":6,"modo":"constante","duracao":0,"atraso":0,"ativo":false,"entrada":0.4,"saida":0.4,"variacao":"constante","audio":{"tipo":"padrao","som":null,"volume":0.4,"quando":"inicio"}},"glitch":{"intensidade":0.5,"frequencia":0.5,"duracao":0,"atraso":0,"ativo":true,"entrada":0.4,"saida":0.4,"variacao":"constante","audio":{"tipo":"padrao","som":null,"volume":0.4,"quando":"rajada"}},"filtro":{"pb":0,"escurecer":0,"contraste":0,"tom":"#8a0000","tomForca":0.3,"inverter":false,"duracao":0,"atraso":0,"ativo":false,"entrada":0.4,"saida":0.4,"variacao":"constante","audio":{"tipo":"padrao","som":null,"volume":0.4,"quando":"inicio"}}},"fotoPropria":true},"efeitos":{},"item":{"comportamento":"nenhum","imagem":null,"largura":160,"escala":1,"rotacao":0,"espelharX":false,"opacidade":1,"z":15,"desde":"resultado","saiDaFoto":true,"x":1500,"y":820,"velocidade":140,"distancia":160,"balancar":true,"virar":false,"area":{"x1":0,"x2":1920,"y1":0,"y2":1080},"sujeira":{"cor":"#5bd62a","opacidade":0.55,"frequencia":1.2,"tamanho":60,"max":60,"escorrer":true,"gotas":true,"fumaca":true,"frente":true,"duraNaTela":30,"someEm":3},"aparicoes":{"quantidade":3,"opacidade":0.1,"tamanho":320,"ciclo":6,"imagens":[],"emoji":"","animacao":"flutuar","desfoque":0,"rampa":6},"clima":{"ativo":false,"escurecer":0.25,"dessaturar":0.5,"tom":"#4a0000","tomForca":0.25,"vinheta":0.5,"nevoa":0.3},"emoji":"","zona":{"modo":"adivinhador","margem":40,"porLado":false,"esq":40,"dir":40,"cima":40,"baixo":40,"x":740,"y":540,"w":560,"h":700,"mostrar":true},"nascer":"longe","surgir":"pop","surgirDuracao":0.6,"porCima":true},"lista":{"ativo":true,"nome":"","imagem":"a_cfn0zsf","emoji":"","oculto":null},"series":[],"fundoAjuste":null},{"perguntas":[{"texto":"O seu personagem pode ser maior que uma pessoa?","reacao":"a_nvlfsnp"},{"texto":"O seu personagem normalmente fica do lado de fora?","reacao":"a_oldpfpv"},{"texto":"O seu personagem pode ser encontrado em locais públicos?","reacao":"a_vullv0q"},{"texto":"O seu personagem foi construído por seres humanos?","reacao":"a_gcvu3rh"},{"texto":"O seu personagem normalmente permanece no mesmo lugar?","reacao":"a_x8ia1sl"},{"texto":"O seu personagem pode durar dezenas de anos?","reacao":"a_lq5qe5a"},{"texto":"O seu personagem pode possuir palavras escritas nele?","reacao":"a_gbqe4gh","efeitos":{"tremor":{"intensidade":6,"modo":"constante","duracao":1,"atraso":0,"ativo":true,"entrada":0.05,"saida":0.2,"variacao":"constante","audio":{"tipo":"padrao","som":null,"volume":0.4,"quando":"inicio"},"repetir":0}},"transicao":{"entrada":null,"saida":null}},{"texto":"O seu personagem pode possuir números?","reacao":"a_lq5qe5a"},{"texto":"O seu personagem pode possuir o nome de alguém?","reacao":"a_ldjr1uf","efeitos":{"filme":{"intensidade":0.23,"sepia":false,"duracao":0,"atraso":0,"ativo":false,"entrada":0.4,"saida":0.4,"variacao":"constante","audio":{"tipo":"padrao","som":null,"volume":0.4,"quando":"loop"}}},"transicao":{"entrada":null,"saida":null}},{"texto":"O seu personagem pode ser feito de pedra?","reacao":"a_knkx7sf"},{"texto":"O seu personagem pode possuir uma fotografia de uma pessoa?","reacao":"a_4fus7zt","efeitos":{"imagem":{"imagens":[{"imagem":"a_u6r4ris","x":960,"y":540,"largura":500,"escala":1.52,"rotacao":0,"opacidade":0.13,"z":25,"animEntrada":"esquerda","animSaida":"direita","movimento":"nada","forcaMov":1,"atraso":0}],"duracao":0.4,"atraso":0,"entrada":1.3,"saida":1.3,"ativo":true,"variacao":"constante","audio":{"tipo":"padrao","som":null,"volume":0.6,"quando":"inicio","tom":1,"fadeOut":0.05},"repetir":0}},"transicao":{"entrada":null,"saida":null}},{"texto":"O seu personagem está relacionado a lembranças?","reacao":"a_4fus7zt"},{"texto":"O seu personagem normalmente possui duas datas relacionadas à mesma pessoa?","reacao":"a_knkx7sf"},{"texto":"O seu personagem costuma ser encontrado em cemitérios?","reacao":"a_x8ia1sl"},{"texto":"O seu personagem identifica o local onde uma pessoa foi sepultada?","reacao":"a_gcvu3rh","efeitos":{"aparicoes":{"imagem":null,"imagens":[],"emoji":"👁️","quantidade":10,"opacidade":0.21,"tamanho":320,"ciclo":6,"animacao":"flutuar","desfoque":0,"duracao":0,"atraso":0,"ativo":true,"entrada":0.4,"saida":0.4,"variacao":"constante","audio":{"tipo":"padrao","som":null,"volume":0.4,"quando":"inicio"}}},"transicao":{"entrada":null,"saida":null}}],"tipo":"resultado","reacaoInicio":null,"resultado":{"nome":"Túmulo","desc":"-","creditos":"Enviado por ghostfacefan123","imagem":"a_wodg83a","reacao":"a_dwt1uxz","foto":{"zoom":1,"offX":0,"offY":0,"ajuste":"cobrir","espelharX":false,"rotacao":0},"mostrarTitulo":true,"titulo":"","sim":"","nao":""},"revelacao":{"imagem":null,"x":960,"y":540,"largura":1100,"altura":900,"escala":1,"rotacao":0,"espelharX":false,"espelharY":false,"sombra":true,"esconderPersonagem":true,"estilo":"sombrio","tempoPreto":1.5,"espera":1,"aparecer":"degraus","degraus":6,"tempoAparecer":2.5,"filme":{"ativo":true,"intensidade":0.7,"sepia":true},"falas":["Olá.","Você achou mesmo que podia me matar?"],"falaFonte":"VT323","falaTamanho":54,"falaCor":"#ffffff","falaY":1010,"falaVelocidade":14,"falaPausa":1.2,"falaSom":true,"falaTom":220,"falaVolume":0.6,"jumpscare":{"ativo":false,"depois":1,"zoom":2.6,"duracao":1.2,"tremor":25,"glitch":true,"flash":true,"flashCor":"#ff0000","grito":true,"volume":0.4,"fim":"preto"},"falaX":960,"ataque":{"ativo":true,"imagem":null,"quadros":5,"duracoes":null,"golpe":2,"x":960,"y":520,"altura":820,"rotacao":0,"espelhar":false,"velocidade":1,"vezes":1,"depois":0.35,"som":true,"volume":0.6,"tremor":14,"flash":true,"flashCor":"#ff0000","flashForca":0.3,"tremerAlvo":false,"piscarAlvo":false,"tirarPreto":true,"contorno":true},"textoSome":0.4,"someAposFalas":true,"bug":{"ativo":true,"depois":0.15,"duracao":0.9,"glitch":1,"tremor":14,"cores":true,"imagem":true,"som":true,"volume":0.4},"avancar":"clique","cliqueCompleta":true,"seta":{"ativo":true,"texto":"▼","cor":"#ffffff","tamanho":0.7,"animacao":"pular","posicao":"fim"},"imagem2":{"imagem":null,"quando":"fimAtaque","dx":0,"dy":0,"escala":1,"aparecer":"corte","tempoAparecer":0.2,"fica":0,"tremer":10,"piscarVermelho":true,"noBug":true,"modo":"leve","forca":1}},"fundo":null,"continuar":{"ativo":true,"nome":"??????","desc":"Você ainda quer continuar???","creditos":"Enviado por Continuar???","imagem":null,"reacao":"a_z2p25gp","foto":{"zoom":1,"offX":0,"offY":0,"ajuste":"cobrir","espelharX":false,"rotacao":0},"mostrarTitulo":true,"titulo":"Continuar??????","sim":"Não","nao":"Sim??","efeitos":{"glitch":{"intensidade":0.5,"frequencia":0.5,"duracao":0,"atraso":0,"ativo":true,"entrada":0.4,"saida":0.4,"variacao":"constante","audio":{"tipo":"padrao","som":null,"volume":0.4,"quando":"rajada"}},"filme":{"intensidade":0.6,"sepia":true,"duracao":0,"atraso":0,"ativo":true,"entrada":0.4,"saida":0.4,"variacao":"constante","audio":{"tipo":"padrao","som":null,"volume":0.4,"quando":"loop"}}}},"efeitos":{},"item":{"comportamento":"fixo","imagem":"a_oyyjw8v","largura":262,"escala":1.888,"rotacao":0,"espelharX":true,"opacidade":1,"z":15,"desde":"resultado","saiDaFoto":true,"x":274,"y":833,"velocidade":140,"distancia":160,"balancar":true,"virar":false,"area":{"x1":0,"x2":1920,"y1":0,"y2":1080},"sujeira":{"cor":"#5bd62a","opacidade":0.55,"frequencia":1.2,"tamanho":60,"max":60,"escorrer":true,"gotas":true,"fumaca":true,"frente":true,"duraNaTela":30,"someEm":3},"aparicoes":{"quantidade":3,"opacidade":0.1,"tamanho":320,"ciclo":6,"imagens":[],"emoji":"","animacao":"flutuar","desfoque":0,"rampa":6},"clima":{"ativo":true,"escurecer":0.1,"dessaturar":1,"tom":"#4a0000","tomForca":0.07,"vinheta":0.26,"nevoa":0},"emoji":"","zona":{"modo":"adivinhador","margem":40,"porLado":false,"esq":40,"dir":40,"cima":40,"baixo":40,"x":740,"y":540,"w":560,"h":700,"mostrar":true},"nascer":"longe","surgir":"pop","surgirDuracao":0.6,"porCima":true},"lista":{"ativo":true,"nome":"","imagem":"a_oyyjw8v","emoji":"","oculto":null},"series":[{"id":"sja8xva2","nome":"","ativo":true,"de":8,"ate":13,"fundo":null,"fundoAjuste":null,"efeitos":{"filme":{"intensidade":0.49,"sepia":false,"duracao":0,"atraso":0,"ativo":true,"entrada":0.4,"saida":0.4,"variacao":"constante","audio":{"tipo":"padrao","som":null,"volume":0.4,"quando":"loop"}}},"personagem":null,"painel":null,"transicao":{"entrada":null,"saida":null}}],"fundoAjuste":null},{"perguntas":[{"texto":"O s-seu p-personagem consegue se m-movimentar s-sozinho???","reacao":"a_7w9j9qn","painel":null,"respostas":["Sim?","N-Não...","Não s-sei?","Provavelmente não??","Provavelmente s-sim...?"],"numero":"49?","efeitos":{"escuridao":{"intensidade":0.7,"tamanho":0.45,"piscar":false,"centro":"tela","duracao":0,"atraso":0,"ativo":false,"entrada":0.4,"saida":0.4,"variacao":"constante","audio":{"tipo":"padrao","som":null,"volume":0.4,"quando":"inicio"}},"batimento":{"cor":"#8a0000","intensidade":0.6,"bpm":70,"zoom":true,"som":false,"volume":0.7,"duracao":0,"atraso":0,"ativo":true,"entrada":0.4,"saida":0.4,"variacao":"constante","audio":{"tipo":"mudo","som":null,"volume":0.7,"quando":"rajada"}}},"transicao":{"entrada":null,"saida":null}},{"texto":"O s-seu personagem pode desaparecer de repente?","reacao":"a_gbqe4gh","efeitos":{"tremor":{"intensidade":6,"modo":"rajadas","duracao":0,"atraso":0,"ativo":true,"entrada":0.4,"saida":0.4,"variacao":"constante","audio":{"tipo":"padrao","som":null,"volume":0.4,"quando":"inicio"}}},"transicao":{"entrada":null,"saida":null}},{"texto":"O seu p-personagem consegue atravessar paredes?","reacao":"a_tc15bsk","efeitos":{"aparicoes":{"imagem":null,"imagens":[],"emoji":"👁️","quantidade":10,"opacidade":0.33,"tamanho":320,"ciclo":6.5,"animacao":"flutuar","desfoque":0,"duracao":0,"atraso":0,"ativo":true,"entrada":0.4,"saida":0.4,"variacao":"constante","audio":{"tipo":"padrao","som":null,"volume":0.4,"quando":"inicio"}}},"transicao":{"entrada":null,"saida":null}},{"texto":"O seu personagem possui forma h-humana?","reacao":"a_knkx7sf","respostas":["Não","Não","Não","Não","Não"],"efeitos":{"nevoa":{"intensidade":0.89,"duracao":0,"atraso":0,"ativo":true,"entrada":0.4,"saida":0.4,"variacao":"constante","audio":{"tipo":"padrao","som":null,"volume":0.4,"quando":"loop"}}},"transicao":{"entrada":null,"saida":null}},{"texto":"O seu personagem pode ser invisível?","reacao":"a_x8ia1sl","numero":"??","efeitos":{"zoom":{"intensidade":0.08,"periodo":2,"duracao":1,"atraso":0,"ativo":true,"entrada":0.05,"saida":0.2,"variacao":"constante","audio":{"tipo":"padrao","som":null,"volume":0.4,"quando":"inicio"},"repetir":0},"escuridao":{"intensidade":0.7,"tamanho":0.45,"piscar":false,"centro":"tela","duracao":1,"atraso":0,"ativo":true,"entrada":0.05,"saida":0.2,"variacao":"constante","audio":{"tipo":"padrao","som":null,"volume":0.4,"quando":"inicio"},"repetir":0}},"transicao":{"entrada":null,"saida":null}},{"texto":"O s-seu personagem costuma assombrar l-lugares?","reacao":"a_uj9gq7l","respostas":["Sim","Sim","Sim","Sim","Sim"],"numero":"544","efeitos":{"tremor":{"intensidade":6,"modo":"constante","duracao":0,"atraso":0,"ativo":false,"entrada":0.4,"saida":0.4,"variacao":"constante","audio":{"tipo":"padrao","som":null,"volume":0.4,"quando":"inicio"}},"glitch":{"intensidade":0.5,"frequencia":0.5,"duracao":0,"atraso":0,"ativo":true,"entrada":0.4,"saida":0.4,"variacao":"constante","audio":{"tipo":"padrao","som":null,"volume":0.4,"quando":"rajada"}}},"transicao":{"entrada":null,"saida":null}},{"texto":"O s-seu personagem c-costuma aparecer em histórias de c-casas mal-assombradas?","reacao":"a_6t8ze6i","respostas":["ㅤ","ㅤ","...SIM...","ㅤ","ㅤ"],"fundo":null,"efeitos":{"aparicoes":{"imagem":null,"imagens":[],"emoji":"👁️","quantidade":12,"opacidade":0.31,"tamanho":320,"ciclo":6,"animacao":"tremer","desfoque":0,"duracao":0,"atraso":0,"ativo":true,"entrada":0.4,"saida":0.4,"variacao":"constante","audio":{"tipo":"padrao","som":null,"volume":0.4,"quando":"inicio"}}},"transicao":{"entrada":null,"saida":null}},{"texto":"...","reacao":"a_knkx7sf","numero":"56...","transicao":{"entrada":null,"saida":null},"efeitos":{"glitch":{"intensidade":0.7,"frequencia":1,"duracao":1,"atraso":0,"ativo":true,"entrada":0.05,"saida":0.2,"repetir":0,"audio":{"tipo":"padrao","som":null,"volume":0.6,"quando":"rajada"}}}},{"texto":"o seu personagem... costuma ser representado... como uma figura branca e... assustadora...?","reacao":"a_uj9gq7l","numero":"67","respostas":["sim.","sim.","sim.","sim.","sim."],"efeitos":{"batimento":{"cor":"#8a0000","intensidade":0.6,"bpm":70,"zoom":true,"som":false,"volume":0.7,"duracao":0,"atraso":0,"ativo":true,"entrada":0.4,"saida":0.4,"variacao":"constante","audio":{"tipo":"mudo","som":null,"volume":0.7,"quando":"rajada"}}},"transicao":{"entrada":null,"saida":null}},{"texto":"...","reacao":"a_jnq368o","respostas":["...","...","...","...","..."],"numero":"...","personagem":{"x":568,"y":540,"largura":320,"altura":420,"escala":1.26,"rotacao":0,"espelharX":true,"espelharY":false,"sombra":true,"opacidade":1,"z":10},"efeitos":{"filtro":{"pb":0,"escurecer":0,"contraste":0,"tom":"#8a0000","tomForca":0.3,"inverter":false,"duracao":0,"atraso":0,"ativo":false,"entrada":0.4,"saida":0.4,"variacao":"constante","audio":{"tipo":"padrao","som":null,"volume":0.4,"quando":"inicio"}},"filme":{"intensidade":0.92,"sepia":false,"duracao":0,"atraso":0,"ativo":true,"entrada":0.4,"saida":0.4,"variacao":"constante","audio":{"tipo":"padrao","som":null,"volume":0.4,"quando":"loop"}}},"transicao":{"entrada":null,"saida":null}}],"tipo":"revelacao","reacaoInicio":null,"resultado":{"nome":"Túmulo","desc":"-","creditos":"Enviado por ghostfacefan123","imagem":"a_wodg83a","reacao":"a_aki8","foto":{"zoom":1,"offX":0,"offY":0,"ajuste":"cobrir","espelharX":false,"rotacao":0},"mostrarTitulo":true,"titulo":"","sim":"","nao":""},"revelacao":{"imagem":"a_9k4mv76","x":960,"y":540,"largura":1100,"altura":900,"escala":0.88,"rotacao":0,"espelharX":false,"espelharY":false,"sombra":true,"esconderPersonagem":true,"estilo":"sombrio","tempoPreto":1.5,"espera":1,"aparecer":"degraus","degraus":6,"tempoAparecer":2.5,"filme":{"ativo":true,"intensidade":0.7,"sepia":true},"falas":["...","Olá Problems...","Você achou mesmo que podia me matar?","Patético."],"falaFonte":"VT323","falaTamanho":54,"falaCor":"#ffffff","falaY":1010,"falaVelocidade":14,"falaPausa":1.2,"falaSom":true,"falaTom":220,"falaVolume":0.6,"jumpscare":{"ativo":false,"depois":1,"zoom":2.6,"duracao":1.2,"tremor":25,"glitch":true,"flash":true,"flashCor":"#ff0000","grito":true,"volume":0.4,"fim":"preto"},"falaX":960,"ataque":{"ativo":true,"imagem":null,"quadros":5,"duracoes":null,"golpe":2,"x":960,"y":520,"altura":820,"rotacao":0,"espelhar":false,"velocidade":1,"vezes":1,"depois":0.35,"som":true,"volume":0.6,"tremor":14,"flash":true,"flashCor":"#ff0000","flashForca":0.3,"tremerAlvo":false,"piscarAlvo":false,"tirarPreto":true,"contorno":true},"textoSome":0.4,"someAposFalas":true,"bug":{"ativo":true,"depois":0.15,"duracao":0.9,"glitch":1,"tremor":14,"cores":true,"imagem":true,"som":true,"volume":0.4},"avancar":"clique","cliqueCompleta":true,"seta":{"ativo":true,"texto":"▼","cor":"#ffffff","tamanho":0.7,"animacao":"pular","posicao":"fim"},"imagem2":{"imagem":"a_u6r4ris","quando":"fimAtaque","dx":0,"dy":0,"escala":2.7,"aparecer":"piscar","tempoAparecer":2.2,"fica":0.5,"tremer":20,"piscarVermelho":true,"noBug":true,"modo":"cheia","forca":0.85,"x":926,"y":896,"largura":1100,"altura":900,"rotacao":0,"espelharX":false,"espelharY":false}},"fundo":null,"continuar":{"ativo":false,"nome":"Continuar","desc":"","creditos":"","imagem":null,"reacao":null,"foto":{"zoom":1,"offX":0,"offY":0,"ajuste":"cobrir","espelharX":false,"rotacao":0},"mostrarTitulo":true,"titulo":"","sim":"","nao":""},"efeitos":{},"item":{"comportamento":"nenhum","imagem":null,"largura":160,"escala":1,"rotacao":0,"espelharX":false,"opacidade":1,"z":15,"desde":"resultado","saiDaFoto":true,"x":1500,"y":820,"velocidade":140,"distancia":160,"balancar":true,"virar":false,"area":{"x1":0,"x2":1920,"y1":0,"y2":1080},"sujeira":{"cor":"#5bd62a","opacidade":0.55,"frequencia":1.2,"tamanho":60,"max":60,"escorrer":true,"gotas":true,"fumaca":true,"frente":true,"duraNaTela":30,"someEm":3},"aparicoes":{"quantidade":3,"opacidade":0.1,"tamanho":320,"ciclo":6,"imagens":[],"emoji":"","animacao":"flutuar","desfoque":0,"rampa":6},"clima":{"ativo":false,"escurecer":0.25,"dessaturar":0.5,"tom":"#4a0000","tomForca":0.25,"vinheta":0.5,"nevoa":0.3},"emoji":"","zona":{"modo":"adivinhador","margem":40,"porLado":false,"esq":40,"dir":40,"cima":40,"baixo":40,"x":740,"y":540,"w":560,"h":700,"mostrar":true},"nascer":"longe","surgir":"pop","surgirDuracao":0.6,"porCima":true},"lista":{"ativo":true,"nome":"","imagem":"a_h0a5tcj","emoji":"👻","oculto":null},"series":[],"fundoAjuste":null}],"favicon":"__favicon","faviconEstilo":{"borda":"contorno","cor":"#000000","espessura":1.5,"fundo":"#ffffff","fundoTransparente":true,"preencher":false},"menu":{"ativo":true,"transicao":1.2,"mostrarPersonagem":false,"reacao":"a_gcvu3rh","fundo":{"modo":"cor","imagem":"a_fundo","cor":"#1e293e","escurecer":0.21,"ajuste":{"modo":"cobrir","posX":50,"posY":50,"zoom":1,"x":0,"y":0,"rotacao":0,"espelhar":false,"desfoque":14,"escurecer":0,"brilho":1,"saturacao":1}},"titulo":{"texto":"MATE\nO AKINATOR","imagem":null,"imagemLargura":900,"fonte":"Special Elite","tamanho":96,"cor":"#e9e9e9","contorno":11.5,"contornoCor":"#000000","sombra":true,"sombraCor":"#000000","sombraBlur":18,"sombraY":0,"espacamento":3,"animacao":"nenhuma","x":470,"y":270,"escala":0.952,"rotacao":0,"alinhar":"center"},"botao":{"texto":"COMEÇAR","imagem":null,"imagemModo":"fundo","fonte":"","tamanho":44,"negrito":true,"corTexto":"#ffffff","corFundo":"#8a0000","formato":"pilula","raio":18,"largura":0,"altura":0,"bordaLargura":4,"bordaCor":"#000000","sombra":"dura","sombraCor":"#3a0000","hover":1.08,"animacao":"flutuar","x":960,"y":647,"escala":1,"rotacao":0},"efeitos":{},"personagem":{"x":594,"y":535,"largura":320,"altura":420,"escala":2.15,"rotacao":0,"espelharX":true,"espelharY":false,"sombra":true,"opacidade":1,"z":10},"estilo":"lista","opcoes":[{"texto":"Novo Jogo","acao":"comecar"},{"texto":"Continuar","acao":"continuar"}],"listaOp":{"x":300,"y":800,"fonte":"VT323","tamanho":66,"cor":"#ffffff","corAtiva":"#ffffff","seta":">>","espaco":10,"escala":1,"rotacao":0},"rodape":{"ativo":true,"texto":"v1.0","x":80,"y":1040,"fonte":"VT323","tamanho":30,"cor":"#7c7c7c","escala":1,"rotacao":0},"figura":{"ativo":true,"imagem":"a_sl57z3v","alt":"a_u6r4ris","x":1331,"y":863,"altura":940,"escala":2.64,"rotacao":0,"espelharX":false,"opacidade":0.9,"brilho":0.55,"contraste":1.35,"pb":0.5,"espelharY":false,"tamanhoModo":"menu","fatorJogo":1.5,"altEscala":1,"animacao":"nenhuma","brilhoCor":"#ff0000","brilhoForca":0},"atmosfera":{"estatica":true,"estaticaForca":0.12,"rajadas":true,"rajadaForca":0.5,"linhas":true,"linhasForca":0.3,"vinheta":0.8,"luz":true,"luzForca":0.3,"twitch":0.7,"tremer":22},"aviso":{"ativo":true,"texto":"AVISO!\n\nEste jogo  contém luzes piscando\ne sons altos.","dica":"(clique para continuar)","fonte":"VT323","tamanho":46,"cor":"#ffffff","dicaTamanho":22,"dicaCor":"#ffffff","fundo":"#000000","alinhar":"center"},"ambiente":{"tipo":"estatica","som":null,"volume":0.25,"bip":true,"volumeBip":0.35},"antigo":{"ativo":true,"transicao":1,"mostrarPersonagem":false,"reacao":null,"fundo":{"modo":"imagem","imagem":"a_fundo","cor":"#000000","escurecer":0.69,"ajuste":{"modo":"esticar","posX":50,"posY":50,"zoom":1,"x":0,"y":0,"rotacao":0,"espelhar":false,"desfoque":14,"escurecer":0,"brilho":1,"saturacao":1}},"titulo":{"texto":"MATE O AKINATOR","imagem":null,"imagemLargura":900,"fonte":"Nosifer","tamanho":120,"cor":"#ffffff","contorno":6,"contornoCor":"#000000","sombra":true,"sombraCor":"#8a0000","sombraBlur":0,"sombraY":8,"espacamento":4,"animacao":"piscar","x":960,"y":468,"escala":1,"rotacao":0,"alinhar":"center"},"botao":{"texto":"COMEÇAR","imagem":null,"imagemModo":"fundo","fonte":"","tamanho":44,"negrito":true,"corTexto":"#ffffff","corFundo":"#8a0000","formato":"pilula","raio":18,"largura":0,"altura":0,"bordaLargura":4,"bordaCor":"#000000","sombra":"dura","sombraCor":"#3a0000","hover":1.08,"animacao":"flutuar","x":960,"y":647,"escala":1,"rotacao":0},"efeitos":{},"personagem":{"x":594,"y":535,"largura":320,"altura":420,"escala":2.15,"rotacao":0,"espelharX":true,"espelharY":false,"sombra":true,"opacidade":1,"z":10},"estilo":"botao","opcoes":[{"texto":"Novo Jogo","acao":"comecar"},{"texto":"Continuar","acao":"trancado"}],"listaOp":{"x":330,"y":790,"fonte":"VT323","tamanho":64,"cor":"#ffffff","corAtiva":"#ffffff","seta":">>","espaco":10,"escala":1,"rotacao":0},"rodape":{"ativo":false,"texto":"v1.0","x":80,"y":1040,"fonte":"VT323","tamanho":30,"cor":"#8a8a8a","escala":1,"rotacao":0},"figura":{"ativo":false,"imagem":null,"alt":null,"x":1400,"y":560,"altura":1000,"escala":1,"rotacao":0,"espelharX":false,"opacidade":0.9,"brilho":0.55,"contraste":1.35,"pb":0.5},"atmosfera":{"estatica":false,"estaticaForca":0.12,"rajadas":true,"rajadaForca":0.5,"linhas":false,"linhasForca":0.3,"vinheta":0,"luz":false,"luzForca":0.3,"twitch":0.5,"tremer":14},"aviso":{"ativo":false,"texto":"AVISO!\n\nEste jogo contém sustos,\nluzes piscando e sons altos.","dica":"(clique para continuar)","fonte":"VT323"},"ambiente":{"tipo":"mudo","som":null,"volume":0.25,"bip":false,"volumeBip":0.35}},"transicaoJogo":{"ativo":true,"forca":0.06,"linhas":0.12,"volume":0.08,"sumir":1.6},"volume":{"ativo":true,"texto":"VOLUME","x":330,"y":965,"fonte":"VT323","tamanho":44,"cor":"#ffffff","corBarra":"#ffffff","corVazia":"rgba(255,255,255,0.18)","barras":10,"escala":1,"rotacao":0,"teclas":true,"osd":true,"osdCor":"#3cff6a","amostra":true},"estrelas":{"ativo":true,"quantidade":2,"modo":"fixo","max":5,"simbolo":"★","tamanho":70,"cor":"#ffffff","brilho":12,"espaco":14,"x":1809,"y":74,"escala":1,"rotacao":0,"lembrar":true,"verNoEditor":true},"continuar":{"comecaEm":"inicio","apresentacao":false}},"lista":{"ativo":true,"x":1266,"y":540,"escala":0.71,"rotacao":0,"direcao":"vertical","tamanho":72,"espaco":14,"fundo":true,"fundoCor":"#000000","fundoAlfa":0.35,"raio":16,"padding":14,"titulo":"","tituloCor":"#ffffff","tituloTamanho":22,"nomes":"achado","nomeCor":"#ffffff","nomeTamanho":15,"silhuetaOpacidade":1,"animacao":"flutuar","achaEm":"resultado","esconderNoFinal":true,"achar":{"animacao":"pop","duracao":0.9,"raio":true,"cor":"#ffd23f","som":true,"volume":0.5},"intro":{"ativo":true,"x":960,"y":620,"escala":2.2,"duracao":3.5,"voo":0.9,"escurecer":0.65,"esperarClique":false,"dica":"clique para continuar","nomes":false,"texto":{"texto":"Você precisa encontrar os seguintes itens:","x":960,"y":400,"escala":1,"fonte":"","tamanho":58,"cor":"#ffffff","contorno":4,"contornoCor":"#000000","sombra":true,"sombraCor":"#8a0000","sombraBlur":0,"sombraY":5},"direcao":"horizontal","espaco":24,"entrada":"impacto","entradaIntervalo":0.45,"entradaDuracao":0.5,"tremor":12,"onda":true,"ondaCor":"#ffffff","som":true,"volume":0.7,"parado":1.2,"clarear":0.6,"desfoque":8,"clarearQuando":"junto"},"sumirDuracao":1.5,"final":{"modo":"umPorUm","depois":0.6,"intervalo":0.7,"duracao":0.6,"animacao":"glitch","ultimoEspera":0.9,"depoisDeTudo":0.9,"som":true,"volume":0.5,"centro":true,"centroX":960,"centroY":540,"centroEscala":2.6,"centroDuracao":1.1,"centroEspera":0.6,"centroTitulo":false}},"aoVivo":{"ativo":true},"pastasImg":{"nomes":["Akinator","imagem do chatgpt 14 de out. de 2026,"],"de":{"a_ldjr1uf":"Akinator","a_dwt1uxz":"Akinator","a_vullv0q":"Akinator","a_63itt2b":"Akinator","a_gcvu3rh":"Akinator","a_nvlfsnp":"Akinator","a_r5w3cx6":"Akinator","a_lq5qe5a":"Akinator","a_42fjkiq":"Akinator","a_76gzcik":"Akinator","a_7w9j9qn":"Akinator","a_x8ia1sl":"Akinator","a_z2p25gp":"Akinator","a_gbqe4gh":"Akinator","a_6t8ze6i":"Akinator","a_knkx7sf":"Akinator","a_uj9gq7l":"Akinator","a_tc15bsk":"Akinator","a_gg039gt":"Akinator","a_4fus7zt":"Akinator","a_u6r4ris":"Akinator","a_sl57z3v":"Akinator","a_h0a5tcj":"imagem do chatgpt 14 de out. de 2026,","a_oyyjw8v":"imagem do chatgpt 14 de out. de 2026,","a_cfn0zsf":"imagem do chatgpt 14 de out. de 2026,","a_3dv65vs":"imagem do chatgpt 14 de out. de 2026,","a_m21ja55":"imagem do chatgpt 14 de out. de 2026,","a_oldpfpv":"Akinator"}},"animPersonagem":{"idle":{"ativo":true,"flutuar":10,"respirar":1.5,"balancar":0.6,"ciclo":3.2,"noEditor":true},"troca":{"tipo":"pulinho","altura":22,"esticar":7,"agachar":true,"flutuar":6,"sempre":false}},"volumeEfeitos":0.2,"ondas":{"ativo":true,"velocidade":1,"movimento":1,"faixas":false,"faixasForca":1,"topo":109,"base":825,"fina":836,"finaAltura":64,"cor1":"#3b63a8","cor2":"#7fb2e8","cor3":"#b4c3f7","cor4":"#3cc4e6","resolucao":0.5,"fitasForca":1,"bolha":true},"volumeGeral":0.1,"fimJogo":{"voltarMenu":true,"segundos":5,"transicao":1.5,"estatica":true},"faviconOriginal":"a_m21ja55"};
+</script>
+<script>
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  var BASE = window.ADM_BASE;
+  var clone = function (o) { return JSON.parse(JSON.stringify(o)); };
+  var publicado = {};               // ajustes que já estão no ar
+  var editado = clone(BASE);        // o que está nos campos
+  var db = null, raiz = null, offset = 0, jogadores = {};
+  var campos = [];                  // {caminho, el, tipo}
+
+  function toast(m) { var t = $('toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(function () { t.classList.remove('on'); }, 2600); }
+  function pegar(o, c) { for (var i = 0; i < c.length; i++) { if (o == null) return undefined; o = o[c[i]]; } return o; }
+  function por(o, c, v) { for (var i = 0; i < c.length - 1; i++) { if (o[c[i]] == null || typeof o[c[i]] !== 'object') o[c[i]] = {}; o = o[c[i]]; } o[c[c.length - 1]] = v; }
+  function mesclar(alvo, patch) {
+    if (!patch || typeof patch !== 'object') return alvo;
+    Object.keys(patch).forEach(function (k) {
+      var v = patch[k], a = alvo[k];
+      if (v === null || v === undefined) return;
+      if (Array.isArray(v) && Array.isArray(a) && (a.length === 0 || typeof a[0] !== 'object')) alvo[k] = v.slice();
+      else if (typeof v === 'object' && a && typeof a === 'object') mesclar(a, v);
+      else alvo[k] = v;
+    });
+    return alvo;
+  }
+  function numero(r, p) {
+    var q = BASE.rodadas[r] && BASE.rodadas[r].perguntas[p];
+    if (q && q.numero != null && String(q.numero).trim() !== '') return String(q.numero);
+    var n = 0; for (var i = 0; i < r; i++) n += BASE.rodadas[i].perguntas.length; return String(n + p + 1);
+  }
+  function onde(j) {
+    if (!j) return '?';
+    if (j.tipo === 'menu') return '🏠 No menu';
+    if (j.tipo === 'pergunta') return 'Rodada ' + (j.r + 1) + ' · pergunta ' + numero(j.r, j.p);
+    var R = BASE.rodadas[j.r] || {};
+    if (R.tipo === 'revelacao') return '💀 No final' + (j.final ? ' (' + ({ preto: 'escurecendo', espera: 'silêncio', aparecer: 'aparecendo', falas: 'falas', antesAtaque: 'ataque', ataque: 'ataque', antesBug: 'bugando', bugado: 'bugando', antesSusto: 'susto', susto: 'SUSTO', fim: 'acabou' }[j.final] || j.final) + ')' : '');
+    if (j.tipo === 'continuar') return 'Rodada ' + (j.r + 1) + ' · "Continuar"';
+    return 'Rodada ' + (j.r + 1) + ' · palpite: ' + ((R.resultado && R.resultado.nome) || '');
+  }
+
+  // ---------- campos editáveis ----------
+  function campo(caminho, rotulo, tipo, pai) {
+    var base = pegar(BASE, caminho), el;
+    if (tipo === 'linhas') { el = document.createElement('textarea'); el.rows = Math.max(2, (base || []).length); }
+    else if (tipo === 'bool') { el = document.createElement('input'); el.type = 'checkbox'; el.style.width = '22px'; el.style.height = '22px'; }
+    else { el = document.createElement('input'); el.className = 'txt'; el.type = tipo === 'seg' || tipo === 'num' ? 'number' : 'text'; if (el.type === 'number') el.step = '0.05'; }
+    var c = { caminho: caminho, el: el, tipo: tipo };
+    el.addEventListener('input', function () { por(editado, caminho, ler(c)); marcar(); });
+    campos.push(c);
+    if (rotulo != null) {
+      var w = document.createElement('div'); w.className = 'campo';
+      var l = document.createElement('label'); l.textContent = rotulo;
+      w.appendChild(l); w.appendChild(el); pai.appendChild(w);
+    } else pai.appendChild(el);
+    return el;
+  }
+  function ler(c) {
+    var v = c.el.value;
+    if (c.tipo === 'bool') return !!c.el.checked;
+    if (c.tipo === 'linhas') return v.split('\n').map(function (x) { return x.replace(/\r/g, ''); }).filter(function (x, i, a) { return x.trim() || i < a.length - 1; });
+    if (c.tipo === 'seg') return Math.max(0, Math.round(parseFloat(v || '0') * 1000));
+    if (c.tipo === 'num') return parseFloat(v || '0');
+    return v;
+  }
+  function mostrar(c, v) {
+    if (c.tipo === 'bool') c.el.checked = !!v;
+    else if (c.tipo === 'linhas') c.el.value = (v || []).join('\n');
+    else if (c.tipo === 'seg') c.el.value = v == null ? '' : +(v / 1000).toFixed(2);
+    else c.el.value = v == null ? '' : v;
+  }
+  function preencherCampos() { campos.forEach(function (c) { mostrar(c, pegar(editado, c.caminho)); }); marcar(); }
+  function diferencas(a, b) { return campos.filter(function (c) { return JSON.stringify(pegar(a, c.caminho)) !== JSON.stringify(pegar(b, c.caminho)); }); }
+  function marcar() {
+    var noAr = mesclar(clone(BASE), publicado);
+    var dif = diferencas(editado, noAr);
+    campos.forEach(function (c) { c.el.classList.toggle('mudou', dif.indexOf(c) >= 0); });
+    $('cont').textContent = dif.length ? dif.length + ' alteração(ões) não publicada(s)' : '';
+    $('b-publicar').disabled = !dif.length || !db;
+    $('b-descartar').disabled = !dif.length;
+  }
+
+  function montar() {
+    $('titulo').textContent = (BASE.textos && BASE.textos.tituloPagina) || '';
+    // gerais
+    var g = $('gerais');
+    var sep = function (t) { var d = document.createElement('div'); d.className = 'sep'; d.textContent = t; g.appendChild(d); };
+    sep('Menu');
+    if (BASE.menu) { campo(['menu', 'titulo', 'texto'], 'Título', 'texto', g); campo(['menu', 'botao', 'texto'], 'Botão', 'texto', g); }
+    if (BASE.lista && BASE.lista.intro) { sep('Apresentação da lista'); campo(['lista', 'intro', 'texto', 'texto'], 'Texto', 'texto', g); }
+    sep('Botões de resposta (padrão)');
+    campo(['textos', 'respostas'], null, 'linhas', g);
+    sep('Cartão');
+    campo(['textos', 'euAchoQue'], 'Barra "Eu acho que"', 'texto', g);
+    campo(['textos', 'sim'], 'Botão 1', 'texto', g);
+    campo(['textos', 'nao'], 'Botão 2', 'texto', g);
+    sep('Fundo animado (ondas)');
+    campo(['ondas', 'ativo'], 'Ondas ligadas no jogo', 'bool', g);
+    sep('Tempos (segundos)');
+    [['pensando', 'Pensando (...)'], ['carregarCartao', 'Carregando o "Continuar"'], ['transicaoReacao', 'Troca de reação'], ['entradaResultado', 'Entrada do resultado']].forEach(function (x) { campo(['tempos', x[0]], x[1], 'seg', g); });
+    // roteiro
+    var rot = $('roteiro');
+    BASE.rodadas.forEach(function (R, r) {
+      var d = document.createElement('details'); d.className = 'rod'; d.id = 'rod-' + r; if (r === 0) d.open = true;
+      var s = document.createElement('summary');
+      s.innerHTML = 'Rodada ' + (r + 1) + ' <span class="ajuda" style="margin:0">' + R.perguntas.length + ' perguntas → ' + (R.tipo === 'revelacao' ? '★ final' : esc((R.resultado && R.resultado.nome) || '')) + '</span> <span class="tag" id="tag-r' + r + '" style="display:none"></span>';
+      d.appendChild(s);
+      var corpo = document.createElement('div'); corpo.className = 'corpo'; d.appendChild(corpo);
+      R.perguntas.forEach(function (q, p) {
+        var l = document.createElement('div'); l.className = 'perg'; l.id = 'q-' + r + '-' + p;
+        var n = document.createElement('div'); n.className = 'num'; n.textContent = numero(r, p); l.appendChild(n);
+        var box = document.createElement('div'); l.appendChild(box);
+        campo(['rodadas', r, 'perguntas', p, 'texto'], null, 'texto', box);
+        var b = document.createElement('button'); b.className = 'btn mini'; b.textContent = '⏭'; b.title = 'Mandar todo mundo pra esta pergunta';
+        b.onclick = function () { comando({ tipo: 'ir', estado: 'pergunta', r: r, p: p }, 'pergunta ' + numero(r, p)); };
+        l.appendChild(b); corpo.appendChild(l);
+      });
+      if (R.tipo === 'revelacao') {
+        var t = document.createElement('div'); t.className = 'sep'; t.textContent = 'Falas do final (uma por linha)'; corpo.appendChild(t);
+        campo(['rodadas', r, 'revelacao', 'falas'], null, 'linhas', corpo);
+        if (R.revelacao && R.revelacao.jumpscare) campo(['rodadas', r, 'revelacao', 'jumpscare', 'volume'], 'Volume do grito (0 a 1)', 'num', corpo);
+        if (R.revelacao && R.revelacao.ataque) campo(['rodadas', r, 'revelacao', 'ataque', 'volume'], 'Volume do ataque (0 a 1)', 'num', corpo);
+      } else {
+        var t2 = document.createElement('div'); t2.className = 'sep'; t2.textContent = 'Palpite'; corpo.appendChild(t2);
+        campo(['rodadas', r, 'resultado', 'nome'], 'Nome', 'texto', corpo);
+        campo(['rodadas', r, 'resultado', 'desc'], 'Descrição', 'texto', corpo);
+        campo(['rodadas', r, 'resultado', 'creditos'], 'Créditos', 'texto', corpo);
+        if (R.continuar && R.continuar.ativo) { campo(['rodadas', r, 'continuar', 'nome'], '"Continuar": texto', 'texto', corpo); campo(['rodadas', r, 'continuar', 'desc'], '"Continuar": descrição', 'texto', corpo); }
+        if (R.lista) campo(['rodadas', r, 'lista', 'nome'], 'Nome na lista de itens', 'texto', corpo);
+      }
+      rot.appendChild(d);
+    });
+    // "mandar pra"
+    var sel = $('sel-ir');
+    var op = function (v, t) { var o = document.createElement('option'); o.value = v; o.textContent = t; sel.appendChild(o); };
+    if (BASE.menu && BASE.menu.ativo) op('menu-0-0', '🏠 Menu');
+    op('intro-0-0', '▶ Começo do jogo (apresentação da lista)');
+    BASE.rodadas.forEach(function (R, r) {
+      op('pergunta-' + r + '-0', 'Rodada ' + (r + 1) + ' · primeira pergunta (' + numero(r, 0) + ')');
+      if (R.tipo === 'revelacao') op('pergunta-' + r + '-' + Math.max(0, R.perguntas.length - 1), 'Rodada ' + (r + 1) + ' · última pergunta antes do final');
+      else op('fim-' + r + '-0', 'Rodada ' + (r + 1) + ' · palpite (' + ((R.resultado && R.resultado.nome) || '') + ')');
+    });
+    preencherCampos();
+  }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+
+  // ---------- comandos ----------
+  function comando(c, nome) {
+    if (!db) return toast('Abra pelo site pra controlar o jogo.');
+    c.id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    c.quando = firebase.database.ServerValue.TIMESTAMP;
+    db.ref(raiz + '/ao-vivo/comando').set(c).then(function () { toast('Enviado: ' + nome); $('ult-cmd').textContent = 'Último comando: ' + nome + ' (' + new Date().toLocaleTimeString('pt-BR') + ')'; }).catch(function (e) { toast('Não consegui enviar: ' + (e && e.message || e)); });
+  }
+  $('b-reset').onclick = function () { if (confirm('Resetar o jogo pra todo mundo que está jogando?')) comando({ tipo: 'reset' }, 'resetar'); };
+  $('b-recarregar').onclick = function () { comando({ tipo: 'recarregar' }, 'recarregar'); };
+  $('b-ir').onclick = function () { var v = $('sel-ir').value.split('-'); comando({ tipo: 'ir', estado: v[0], r: +v[1], p: +v[2] }, $('sel-ir').selectedOptions[0].textContent); };
+
+  // ---------- publicar ----------
+  $('b-publicar').onclick = function () {
+    var patch = {};
+    campos.forEach(function (c) { var v = pegar(editado, c.caminho); if (JSON.stringify(v) !== JSON.stringify(pegar(BASE, c.caminho))) por(patch, c.caminho, v); });
+    db.ref(raiz + '/ao-vivo/ajustes').set(patch).then(function () { toast('Publicado! Já mudou pra quem está jogando.'); }).catch(function (e) { toast('Não consegui publicar: ' + (e && e.message || e)); });
+  };
+  $('b-descartar').onclick = function () { editado = mesclar(clone(BASE), publicado); preencherCampos(); };
+  $('b-original').onclick = function () {
+    if (!confirm('Apagar todas as alterações ao vivo e voltar ao roteiro que está no ZIP?')) return;
+    editado = clone(BASE); preencherCampos();
+    if (db) db.ref(raiz + '/ao-vivo/ajustes').remove().then(function () { toast('Voltou ao roteiro original.'); });
+  };
+
+  // ---------- jogadores ----------
+  function desenharJogadores() {
+    var agora = Date.now() + offset, box = $('jogadores');
+    var lista = Object.keys(jogadores).map(function (k) { return jogadores[k]; }).filter(function (j) { return j && typeof j.quando === 'number' && agora - j.quando < 45000; });
+    document.querySelectorAll('.aqui').forEach(function (e) { e.classList.remove('aqui'); });
+    BASE.rodadas.forEach(function (R, r) { var t = $('tag-r' + r); if (t) t.style.display = 'none'; });
+    if (!lista.length) { box.innerHTML = '<div class="vazio">Ninguém com o jogo aberto agora.</div>'; return; }
+    box.innerHTML = '';
+    lista.sort(function (a, b) { return b.quando - a.quando; }).forEach(function (j, i) {
+      var d = document.createElement('div'); d.className = 'jog';
+      var seg = Math.max(0, Math.round((agora - j.desde) / 1000));
+      d.innerHTML = '<div>👤</div><div><div class="onde">' + esc(onde(j)) + '</div>' + (j.texto ? '<div class="txt">' + esc(j.texto) + '</div>' : '') + '<div class="txt">jogando há ' + (seg >= 60 ? Math.floor(seg / 60) + ' min ' : '') + (seg % 60) + ' s</div></div>';
+      box.appendChild(d);
+      if (j.tipo === 'pergunta') { var q = $('q-' + j.r + '-' + j.p); if (q) q.classList.add('aqui'); }
+      var t = $('tag-r' + j.r); if (t) { t.style.display = ''; t.textContent = '👤 aqui'; }
+    });
+  }
+  setInterval(desenharJogadores, 2000);
+
+  // ---------- conexão (trava + Firebase único) ----------
+  function conectar() {
+    if (!window.Trava || !window.Trava.ready) return false;
+    window.Trava.ready.then(function (st) {
+      if (!st || !st.admin) { $('status').textContent = 'sem acesso de ADM'; return; }
+      if (!window.firebase || !firebase.database || !window.DB_ROOT) { $('status').textContent = 'sem Firebase'; return; }
+      db = firebase.database(); raiz = window.DB_ROOT;
+      $('bola').classList.add('on'); $('status').textContent = 'ao vivo';
+      db.ref('.info/serverTimeOffset').on('value', function (s) { offset = s.val() || 0; });
+      db.ref(raiz + '/ao-vivo/ajustes').on('value', function (s) { publicado = s.val() || {}; editado = mesclar(clone(BASE), publicado); preencherCampos(); });
+      db.ref(raiz + '/jogadores').on('value', function (s) { jogadores = s.val() || {}; desenharJogadores(); });
+      // a pasta "jogadores" é a única que os jogadores podem gravar (pra o ADM ver onde estão)
+      var site = window.Trava.site || window.ADM_SITE;
+      if (site) {
+        var cref = db.ref('controle/sites/' + site);
+        cref.once('value').then(function (s) {
+          var c = s.val();
+          if (!c) return cref.set({ open: false, escrita: { jogadores: true } });
+          if (!c.escrita || !c.escrita.jogadores) return cref.child('escrita/jogadores').set(true);
+        }).catch(function () {});
+      }
+      marcar();
+    }).catch(function () { $('status').textContent = 'erro na trava'; });
+    return true;
+  }
+  montar();
+  if (location.protocol === 'file:') {
+    $('aviso-local').style.display = '';
+    $('link-site').textContent = 'problemsite.github.io/' + (window.ADM_SITE || '<repositório>') + '/ADM/';
+    $('status').textContent = 'sem conexão (PC)';
+  } else {
+    var tentativas = 0;
+    (function esperar() { if (conectar()) return; if (++tentativas < 100) setTimeout(esperar, 100); else $('status').textContent = 'trava não carregou'; })();
+  }
+})();
+</script>
+</body>
+</html>
+
